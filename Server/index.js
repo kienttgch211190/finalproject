@@ -51,8 +51,6 @@ const restaurantStaffRouter = require("./routes/restaurantStaffRoute");
 const customerPreferenceRouter = require("./routes/customerPreferenceRoute");
 //#endregion
 
-
-
 app.use("/api/user", userRouter);
 app.use("/api/reservation", reservationRouter);
 app.use("/api/review", reviewRouter);

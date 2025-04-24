@@ -1,0 +1,121 @@
+// Main variables
+$primary-color: #1976d2;
+$secondary-color: #388e3c;
+$primary-light: #e3f2fd;
+$text-light: #f5f5f5;
+$text-dark: #333333;
+$background-light: #ffffff;
+$background-dark: #f5f5f5;
+$border-radius: 8px;
+$box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+$transition: all 0.3s ease;
+
+// Dashboard container
+.staff-dashboard {
+  min-height: 100vh;
+  background-color: $background-dark;
+}
+
+// App bar
+.staff-appbar {
+  background-color: $secondary-color !important;
+  box-shadow: $box-shadow !important;
+  z-index: 1300 !important;
+}
+
+// Drawer styles
+.MuiDrawer-paper {
+  background-color: $background-light;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+// Dashboard cards
+.summary-card {
+  height: 100%;
+  transition: $transition;
+  border-radius: $border-radius !important;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+  }
+
+  .summary-number {
+    font-weight: 700;
+    margin: 1rem 0;
+    color: $primary-color;
+  }
+}
+
+// Restaurant info card
+.restaurant-info-card {
+  background-color: $primary-light;
+  border-left: 5px solid $secondary-color;
+  transition: $transition;
+
+  &:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Reservation list items
+.MuiListItem-root {
+  transition: $transition;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .staff-dashboard {
+    .MuiContainer-root {
+      padding: 12px;
+    }
+
+    .MuiCard-root,
+    .MuiPaper-root {
+      margin-bottom: 16px;
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.MuiGrid-item {
+  animation: fadeIn 0.5s forwards;
+}
+
+// Staggered animation for grid items
+@for $i from 1 through 10 {
+  .MuiGrid-item:nth-child(#{$i}) {
+    animation-delay: #{$i * 0.1}s;
+  }
+}
+
+// Status colors
+.MuiChip-root {
+  &.MuiChip-colorSuccess {
+    background-color: rgba(46, 125, 50, 0.1);
+  }
+
+  &.MuiChip-colorWarning {
+    background-color: rgba(237, 108, 2, 0.1);
+  }
+
+  &.MuiChip-colorError {
+    background-color: rgba(211, 47, 47, 0.1);
+  }
+}

@@ -41,6 +41,70 @@ const createUser = (userData) => {
   });
 };
 
+const createCustomerUser = (userData) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { name, email, address, image, phone, password } = userData;
+
+      // Kiểm tra email đã tồn tại chưa
+      const checkemail = await User.findOne({ email: email });
+      if (checkemail !== null) {
+        return resolve({
+          status: "Error",
+          message: "This email address is already in use",
+        });
+      }
+
+      // Kiểm tra đầy đủ thông tin bắt buộc
+      if (!name || !email || !password || !phone) {
+        return resolve({
+          status: "Error",
+          message: "Name, email, password and phone are required",
+        });
+      }
+
+      // Hash mật khẩu
+      const passwordHash = bcrypt.hashSync(password, 10);
+
+      // Tạo người dùng mới với role="customer"
+      const newUser = new User({
+        name,
+        email,
+        address: address || "",
+        image: image || "",
+        phone,
+        passwordHash,
+        role: "customer", // Mặc định là customer
+      });
+
+      await newUser.save();
+
+      // Tạo token đăng nhập luôn cho người dùng mới
+      const accesstoken = await generalAccessToken({
+        id: newUser.id,
+        role: newUser.role,
+      });
+
+      const refreshtoken = await generalRefreshToken({
+        id: newUser.id,
+        role: newUser.role,
+      });
+
+      resolve({
+        status: "Success",
+        message: "Customer account created successfully",
+        userData: {
+          accesstoken,
+          refreshtoken,
+          user: newUser,
+        },
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 const signIn = (userData) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -93,4 +157,5 @@ const signIn = (userData) => {
 module.exports = {
   createUser,
   signIn,
+  createCustomerUser,
 };

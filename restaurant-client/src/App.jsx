@@ -1,0 +1,230 @@
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Login from "./views/Login/Login";
+import Register from "./views/Register/Register";
+import Homepage from "./views/Homepage/Homepage";
+import AdminMenu from "./views/Menu/AdminMenu";
+import RestaurantMana from "./views/Admin/RestaurantMana";
+import UserMana from "./views/Admin/UserMana";
+import ReservationMana from "./views/Admin/ReservationMana";
+import Promotion from "./views/Admin/Promotion";
+import AdminDashboard from "./views/Admin/Dashboard";
+import StaffDashboard from "./views/Staff/Dashboard";
+
+// Tạo Protected Route component để kiểm tra đăng nhập
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem("accessToken") !== null;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+// Role-based Protected Route
+const RoleBasedRoute = ({ children, allowedRoles }) => {
+  const isAuthenticated = localStorage.getItem("accessToken") !== null;
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = user.role || "customer";
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(userRole)) {
+    // Redirect based on role if unauthorized
+    if (userRole === "admin") {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (userRole === "staff") {
+      return <Navigate to="/staff/dashboard" replace />;
+    } else {
+      return <Navigate to="/home" replace />;
+    }
+  }
+
+  return children;
+};
+
+function App() {
+  return (
+    <div className="app">
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Customer routes */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Homepage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/restaurant/:id"
+          element={
+            <ProtectedRoute>
+              <div>Restaurant Detail - Sẽ được triển khai sau</div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reservation/new"
+          element={
+            <ProtectedRoute>
+              <div>New Reservation - Sẽ được triển khai sau</div>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <UserMana />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/restaurants"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <RestaurantMana />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/menus"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminMenu/>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/reservations"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <ReservationMana />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/promotions"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <Promotion />
+            </RoleBasedRoute>
+          }
+        />
+
+        {/* Staff routes */}
+        <Route
+          path="/staff/dashboard"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <StaffDashboard />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/restaurant"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Restaurant Info - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/reservations"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Reservations Management - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/reservations/pending"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Pending Reservations - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/reservation/:id"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Reservation Detail - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/tables"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Table Management - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/menu"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Menu Management - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/staff/promotions"
+          element={
+            <RoleBasedRoute allowedRoles={["staff"]}>
+              <div>Promotions - Sẽ được triển khai sau</div>
+            </RoleBasedRoute>
+          }
+        />
+
+        {/* Route check và chuyển hướng */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <RoleRedirect />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback for unknown routes */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </div>
+  );
+}
+
+// Component để chuyển hướng người dùng dựa trên vai trò
+const RoleRedirect = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = user.role || "customer";
+
+  if (userRole === "admin") {
+    return <Navigate to="/admin/dashboard" replace />;
+  } else if (userRole === "staff") {
+    return <Navigate to="/staff/dashboard" replace />;
+  } else {
+    return <Navigate to="/home" replace />;
+  }
+};
+
+export default App;

@@ -1,0 +1,242 @@
+// Main variables
+$primary-color: #1976d2;
+$primary-light: #e3f2fd;
+$secondary-color: #ff6f00;
+$text-light: #f5f5f5;
+$text-dark: #333333;
+$background-light: #ffffff;
+$background-gray: #f5f5f5;
+$border-radius: 8px;
+$box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+$transition: all 0.3s ease;
+
+// Homepage container
+.homepage-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: $background-gray;
+
+  // Hero section with gradient background
+  .hero-section {
+    background-image: linear-gradient(to right, #1a2980, #26d0ce);
+    color: $text-light;
+    padding: 5rem 0 6rem;
+    position: relative;
+    overflow: hidden;
+
+    &:before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("https://source.unsplash.com/random/?restaurant,food");
+      background-size: cover;
+      background-position: center;
+      opacity: 0.2;
+      z-index: 0;
+    }
+
+    .hero-title {
+      font-weight: 700;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-subtitle {
+      margin-bottom: 2rem;
+      opacity: 0.9;
+      font-weight: 400;
+      position: relative;
+      z-index: 1;
+    }
+
+    .search-container {
+      padding: 2rem;
+      border-radius: $border-radius;
+      position: relative;
+      z-index: 2;
+      box-shadow: $box-shadow;
+
+      .MuiInputBase-root {
+        background-color: $background-light;
+      }
+
+      .search-button {
+        background-color: $secondary-color;
+        color: $text-light;
+        height: 100%;
+        font-weight: 600;
+
+        &:hover {
+          background-color: darken($secondary-color, 10%);
+        }
+      }
+    }
+  }
+
+  // Main content area
+  .main-content {
+    margin-top: -3rem;
+    position: relative;
+    z-index: 3;
+    padding-bottom: 3rem;
+
+    // Promotion cards
+    .promotion-card {
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+      transition: $transition;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .promotion-discount {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-color: $secondary-color;
+        color: $text-light;
+        padding: 0.5rem 1rem;
+        border-bottom-left-radius: $border-radius;
+        font-weight: bold;
+      }
+    }
+
+    // Filter sidebar
+    .filter-sidebar {
+      padding: 1.5rem;
+      height: 100%;
+      box-shadow: $box-shadow;
+    }
+
+    // Restaurant cards
+    .restaurant-card {
+      cursor: pointer;
+      transition: $transition;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .MuiCardContent-root {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+
+        button {
+          margin-top: auto;
+        }
+      }
+
+      img {
+        object-fit: cover;
+      }
+    }
+
+    // No results message
+    .no-results {
+      padding: 3rem;
+      text-align: center;
+      background-color: $background-light;
+    }
+  }
+}
+
+// Media queries for responsive design
+@media (max-width: 960px) {
+  .homepage-container {
+    .hero-section {
+      padding: 4rem 0 5rem;
+
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .search-container {
+        padding: 1.5rem;
+      }
+    }
+
+    .main-content {
+      .restaurant-card {
+        img {
+          height: 160px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .homepage-container {
+    .hero-section {
+      padding: 3rem 0 4rem;
+
+      .hero-title {
+        font-size: 1.8rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+
+      .search-container {
+        padding: 1rem;
+      }
+    }
+
+    .main-content {
+      margin-top: -2rem;
+
+      .promotion-card,
+      .restaurant-card {
+        &:hover {
+          transform: none;
+        }
+      }
+    }
+  }
+}
+
+// Accessibility enhancements
+:focus {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.restaurant-card,
+.promotion-card {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+// Additional styles for select and inputs
+.MuiInputBase-root {
+  .MuiSelect-select,
+  .MuiInputBase-input {
+    padding: 12px !important;
+  }
+}

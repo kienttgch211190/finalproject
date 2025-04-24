@@ -1,0 +1,55 @@
+@import 'variable';
+
+.promotion-page {
+  padding: 24px;
+  background: $color-white;
+  border-radius: 8px;
+  box-shadow: $shadow-base;
+
+  // Header
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+
+    .search-input {
+      width: 300px;
+    }
+  }
+
+  // Bảng
+  .promotion-table {
+    .ant-table-thead > tr > th {
+      background: $color-gray-10;
+      font-weight: 600;
+    }
+
+    .status-tag {
+      border-radius: 4px;
+      padding: 2px 8px;
+      
+      &.active {
+        background: $color-green-light;
+        color: $color-green-dark;
+      }
+      
+      &.expired {
+        background: $color-red-light;
+        color: $color-red-dark;
+      }
+    }
+  }
+
+  // Modal form
+  .promotion-modal {
+    .ant-modal-body {
+      padding: 24px 32px;
+    }
+
+    .time-picker-wrapper {
+      .ant-picker {
+        width: 100%;
+      }
+    }
+  }
+}

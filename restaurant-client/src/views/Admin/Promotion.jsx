@@ -192,13 +192,6 @@ const PromotionPage = () => {
             >
               Thêm Khuyến Mãi
             </Button>
-            <Button
-              type="default"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => (window.location.href = "/admin/dashboard")}
-            >
-              Quay lại Dashboard
-            </Button>
           </Box>
         </Box>
 

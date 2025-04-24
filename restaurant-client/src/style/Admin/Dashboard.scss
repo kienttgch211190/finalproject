@@ -1,87 +1,199 @@
-// Main variables
-$primary-color: #1565c0;
-$secondary-color: #0d47a1;
-$accent-color: #00a0b0;
-$text-light: #f5f5f5;
-$text-dark: #333333;
-$background-light: #ffffff;
-$background-dark: #f5f5f5;
-$border-radius: 8px;
-$box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-$transition: all 0.3s ease;
+@import "../variables.scss";
 
-// Dashboard container
+// Admin Dashboard Layout
 .admin-dashboard {
   min-height: 100vh;
-  background-color: $background-dark;
-}
-
-// App bar
-.admin-appbar {
-  background-color: $primary-color !important;
-  box-shadow: $box-shadow !important;
-  z-index: 1300 !important;
-
-  .MuiToolbar-root {
+  
+  .admin-sider {
+    box-shadow: 2px 0 8px 0 rgba(29, 35, 41, 0.05);
+    position: fixed;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    overflow: auto;
+    
+    .logo {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+      
+      span {
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+      
+      .anticon {
+        font-size: 24px;
+      }
+    }
+    
+    .admin-profile {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 16px;
+      
+      .ant-avatar {
+        margin-bottom: 8px;
+        background-color: #1890ff;
+      }
+      
+      .admin-info {
+        text-align: center;
+        white-space: nowrap;
+        
+        .ant-typography {
+          display: block;
+          color: white;
+          
+          &.ant-typography-secondary {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 12px;
+          }
+        }
+      }
+    }
+    
+    .ant-menu-item {
+      padding-left: 24px !important;
+      
+      &.ant-menu-item-selected {
+        background-color: #1890ff;
+      }
+      
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
+  }
+  
+  .admin-header {
+    background: white;
+    padding: 0 24px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    width: 100%;
+    z-index: 99;
     display: flex;
+    align-items: center;
     justify-content: space-between;
+    
+    .trigger-button {
+      font-size: 18px;
+      color: $text-color;
+    }
+    
+    .header-title {
+      flex-grow: 1;
+      
+      h4 {
+        margin: 0;
+        color: $text-color;
+      }
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+    }
+  }
+  
+  .admin-content {
+    margin: 88px 24px 24px;
+    overflow: initial;
+    background: #f0f2f5;
+    padding: 24px;
+    border-radius: $border-radius;
+    min-height: calc(100vh - 112px);
+    margin-left: 250px;
+    transition: margin-left 0.3s;
+    
+    &.collapsed {
+      margin-left: 80px;
+    }
   }
 }
 
-// Drawer styles
-.MuiDrawer-paper {
-  background-color: $background-light;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-// Dashboard cards
-.summary-card {
-  height: 100%;
-  transition: $transition;
-  border-radius: $border-radius !important;
-  overflow: hidden;
-  background: linear-gradient(to right bottom, #ffffff, #f9f9f9);
+// Cards styling
+.stat-card {
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  transition: all 0.3s;
   
   &:hover {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   }
   
-  .summary-number {
-    font-weight: 700;
-    margin: 1rem 0;
-    color: $primary-color;
-    font-size: 2.5rem;
+  .ant-statistic-title {
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  
+  .ant-statistic-content {
+    font-size: 28px;
+  }
+  
+  &.users {
+    border-top: 3px solid $primary-color;
+  }
+  
+  &.restaurants {
+    border-top: 3px solid $success-color;
+  }
+  
+  &.reservations {
+    border-top: 3px solid $warning-color;
   }
 }
 
-// Status chips
-.MuiChip-root {
-  font-weight: 500;
+.dashboard-card {
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  margin-bottom: 20px;
   
-  &.MuiChip-colorSuccess {
-    background-color: rgba(46, 125, 50, 0.1);
-    color: #2e7d32;
+  .ant-card-head {
+    border-bottom: 1px solid $border-color;
+    
+    .ant-card-head-title {
+      padding: 16px 0;
+    }
   }
   
-  &.MuiChip-colorWarning {
-    background-color: rgba(237, 108, 2, 0.1);
-    color: #ed6c02;
+  .ant-list {
+    .ant-list-item {
+      padding: 12px 0;
+      border-bottom: 1px solid $border-color;
+      
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.01);
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
   }
-  
-  &.MuiChip-colorError {
-    background-color: rgba(211, 47, 47, 0.1);
-    color: #d32f2f;
-  }
-  
-  &.MuiChip-colorInfo {
-    background-color: rgba(2, 136, 209, 0.1);
-    color: #0288d1;
-  }
+}
+
+// Loading container
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f2f5;
 }
 
 // Animations
-@keyframes fadeIn {
+@keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -92,61 +204,40 @@ $transition: all 0.3s ease;
   }
 }
 
-.MuiGrid-item {
-  animation: fadeIn 0.5s forwards;
+.stat-card {
+  animation: fadeInUp 0.5s forwards;
 }
 
-// Staggered animation for grid items
-@for $i from 1 through 10 {
-  .MuiGrid-item:nth-child(#{$i}) {
+.dashboard-card {
+  animation: fadeInUp 0.5s forwards;
+}
+
+@for $i from 1 through 3 {
+  .stat-card:nth-child(#{$i}) {
     animation-delay: #{$i * 0.1}s;
   }
 }
 
-// Responsive adjustments
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .admin-dashboard {
-    .MuiContainer-root {
-      padding: 12px;
+    .admin-sider {
+      z-index: 1000;
     }
     
-    .MuiCard-root,
-    .MuiPaper-root {
-      margin-bottom: 16px;
+    .admin-content {
+      margin-left: 0 !important;
+      padding: 16px;
+      margin-top: 64px;
     }
     
-    .summary-card {
-      .summary-number {
-        font-size: 2rem;
-      }
-    }
-  }
-}
-
-// Menu list items
-.MuiListItem-root {
-  transition: $transition;
-
-  &:hover {
-    background-color: rgba($primary-color, 0.04);
-  }
-  
-  &.Mui-selected {
-    background-color: rgba($primary-color, 0.1) !important;
-    
-    &:hover {
-      background-color: rgba($primary-color, 0.15) !important;
+    .ant-row {
+      margin-right: 0 !important;
+      margin-left: 0 !important;
     }
     
-    .MuiListItemIcon-root {
-      color: $primary-color;
+    .ant-col {
+      padding-right: 0 !important;
+      padding-left: 0 !important;
     }
-  }
-}
-
-// Mobile drawer toggle
-.MuiIconButton-root {
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.08);
   }
 }

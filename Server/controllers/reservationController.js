@@ -39,6 +39,20 @@ const getAvailableTables = async (req, res) => {
   }
 };
 
+// Add this function to reservationController.js
+const getAllReservationsAdmin = async (req, res) => {
+  try {
+    const result = await reservationService.getAllReservationsAdmin(req.query);
+    
+    if (result.status === "Success") {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ status: "Error", message: err.message });
+  }
+};
 // Create reservation
 const createReservation = async (req, res) => {
   try {
@@ -141,6 +155,62 @@ const updateReservationStatus = async (req, res) => {
   }
 };
 
+// Get recent reservations from the last day
+const getRecentReservations = async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : 5;
+    
+    const result = await reservationService.getRecentReservations(limit);
+    
+    if (result.status === "Success") {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ status: "Error", message: err.message });
+  }
+};
+
+// Get today's reservations for a restaurant
+const getRestaurantTodayReservations = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    const result = await reservationService.getRestaurantTodayReservations(restaurantId);
+    
+    if (result.status === "Success") {
+      res.status(200).json(result);
+    } else {
+      res.status(result.status === "Error" && result.message.includes("not found") 
+        ? 404 
+        : 400
+      ).json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ status: "Error", message: err.message });
+  }
+};
+
+// Get pending reservations for a restaurant
+const getRestaurantPendingReservations = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    const result = await reservationService.getRestaurantPendingReservations(restaurantId);
+    
+    if (result.status === "Success") {
+      res.status(200).json(result);
+    } else {
+      res.status(result.status === "Error" && result.message.includes("not found") 
+        ? 404 
+        : 400
+      ).json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ status: "Error", message: err.message });
+  }
+};
 module.exports = {
   getAvailableTables,
   createReservation,
@@ -149,4 +219,8 @@ module.exports = {
   getAllReservations,
   updateReservationStatus,
   getReservationById,
+  getAllReservationsAdmin,
+  getRecentReservations,
+  getRestaurantTodayReservations,
+  getRestaurantPendingReservations,
 };

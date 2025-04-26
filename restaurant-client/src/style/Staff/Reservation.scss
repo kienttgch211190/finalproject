@@ -1,0 +1,200 @@
+@import "../variables.scss";
+
+.staff-reservation-management {
+  // Table styling
+  .ant-table-thead > tr > th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+  }
+
+  .ant-btn-primary {
+    background-color: #1976d2;
+    
+    &.ant-btn-dangerous {
+      background-color: #f5222d;
+    }
+  }
+
+  .ant-select-selector {
+    border-radius: 4px !important;
+  }
+
+  // Restaurant info card styling
+  .restaurant-info-card {
+    border-left: 4px solid #1890ff;
+    background-color: #f8f9fa;
+    
+    .restaurant-name {
+      margin-bottom: 8px;
+    }
+    
+    .ant-typography {
+      margin-bottom: 0;
+    }
+  }
+
+  // Filter and tabs styling
+  .reservation-filters {
+    margin-bottom: 16px;
+    
+    .ant-tabs {
+      margin-bottom: 16px;
+      
+      .ant-tabs-tab {
+        padding: 8px 16px;
+        
+        &.ant-tabs-tab-active {
+          .ant-tabs-tab-btn {
+            font-weight: 600;
+          }
+        }
+        
+        .ant-badge {
+          .ant-badge-count {
+            font-weight: normal;
+          }
+        }
+      }
+    }
+    
+    .filter-controls {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      
+      @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  }
+
+  // Tag colors
+  .ant-tag-success {
+    color: #2e7d32;
+    background: rgba(#2e7d32, 0.1);
+    border-color: rgba(#2e7d32, 0.2);
+  }
+
+  .ant-tag-error {
+    color: #d32f2f;
+    background: rgba(#d32f2f, 0.1);
+    border-color: rgba(#d32f2f, 0.2);
+  }
+
+  .ant-tag-warning {
+    color: #ed6c02;
+    background: rgba(#ed6c02, 0.1);
+    border-color: rgba(#ed6c02, 0.2);
+  }
+
+  .ant-tag-processing {
+    color: #1976d2;
+    background: rgba(#1976d2, 0.1);
+    border-color: rgba(#1976d2, 0.2);
+  }
+
+  // Table row hover effect
+  .ant-table-row {
+    &:hover {
+      td {
+        background-color: rgba(25, 118, 210, 0.04) !important;
+      }
+    }
+  }
+
+  // Animation
+  .ant-table-tbody > tr {
+    animation: fadeIn 0.5s ease-in-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // Add staggered animation delay for rows
+  @for $i from 1 through 10 {
+    .ant-table-tbody > tr:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+  
+  // Reservation detail modal styling
+  .reservation-detail {
+    .detail-section {
+      margin-bottom: 16px;
+      
+      .ant-typography {
+        margin-bottom: 12px;
+      }
+    }
+    
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+        
+        .ant-typography-secondary {
+          margin-bottom: 4px;
+          font-size: 13px;
+        }
+      }
+    }
+    
+    .special-request {
+      padding: 12px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      border-left: 2px solid #1890ff;
+    }
+    
+    .detail-actions {
+      margin-top: 24px;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+}
+
+// Responsive styles
+@media (max-width: 992px) {
+  .staff-reservation-management {
+    .ant-table {
+      overflow-x: auto;
+    }
+    
+    .filter-controls {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .ant-space {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px !important;
+      }
+      
+      .ant-input-search,
+      .ant-picker,
+      .ant-select {
+        width: 100% !important;
+      }
+    }
+    
+    .detail-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+}

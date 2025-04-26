@@ -95,7 +95,7 @@ const RestaurantMana = () => {
   const fetchRestaurants = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/api/restaurant");
+      const response = await axiosInstance.get("/restaurant");
 
       if (response.data.status === "Success") {
         setRestaurants(response.data.data || []);
@@ -150,10 +150,15 @@ const RestaurantMana = () => {
       };
 
       if (selectedRestaurant) {
-        // Edit mode
+        const token = localStorage.getItem("accessToken");
         const response = await axiosInstance.put(
-          `/api/restaurant/${selectedRestaurant._id}`,
-          formattedValues
+          `/restaurant/update/${selectedRestaurant._id}`,
+          formattedValues,
+          {
+             headers: {
+                      Authorization: `Bearer ${token}`, 
+              },
+          }
         );
 
         if (response.data.status === "Success") {
@@ -170,8 +175,13 @@ const RestaurantMana = () => {
       } else {
         // Create mode
         const response = await axiosInstance.post(
-          "/api/restaurant",
-          formattedValues
+          "/restaurant/create",
+          formattedValues,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
         );
 
         if (response.data.status === "Success") {
@@ -200,7 +210,13 @@ const RestaurantMana = () => {
 
     try {
       setLoading(true);
-      const response = await axiosInstance.delete(`/api/restaurant/${id}`);
+      const response = await axiosInstance.delete(`/restaurant/delete/${id}`,
+        {
+          headers: {
+             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+           },
+       }
+      );
 
       if (response.data.status === "Success") {
         message.success("Xóa nhà hàng thành công");

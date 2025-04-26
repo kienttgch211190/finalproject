@@ -78,20 +78,28 @@ const assignStaff = async (assignmentData) => {
 };
 
 // Get all staff for a restaurant
-const getRestaurantStaff = async (restaurantId) => {
+// Get all restaurants a staff member is assigned to
+const getRestaurantStaff = async (userId) => {
   try {
-    // Check if restaurant exists
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
-      return { status: "Error", message: "Restaurant not found" };
+    // Check if user exists and is a staff member
+    const user = await User.findById(userId);
+    if (!user) {
+      return { status: "Error", message: "User not found" };
     }
 
-    const staffAssignments = await RestaurantStaff.find({
-      restaurant: restaurantId,
-      isActive: true,
-    }).populate("user", "name email phone image");
+    if (user.role !== "staff" && user.role !== "admin") {
+      return {
+        status: "Error",
+        message: "User must be a staff member or admin",
+      };
+    }
 
-    return { status: "Success", data: staffAssignments };
+    const assignments = await RestaurantStaff.find({
+      user: userId,
+      isActive: true,
+    }).populate("restaurant", "name address cuisineType");
+
+    return { status: "Success", data: assignments };
   } catch (error) {
     return { status: "Error", message: error.message };
   }

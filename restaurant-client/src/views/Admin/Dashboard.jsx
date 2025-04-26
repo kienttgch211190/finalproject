@@ -95,7 +95,14 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      
+      const token = localStorage.getItem("accessToken");
 
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`, 
+        },
+      };
       // Fetch dashboard data
       const [
         usersResponse,
@@ -104,13 +111,14 @@ const AdminDashboard = () => {
         recentReservationsResponse,
         topRestaurantsResponse,
       ] = await Promise.all([
-        axios.get("/api/user/count"),
-        axios.get("/api/restaurant/count"),
-        axios.get("/api/reservation/count"),
-        axios.get("/api/reservation/recent"),
-        axios.get("/api/restaurant/top"),
+        axios.get("/user/get-all-users", config),
+        axios.get("/restaurant/", config),
+        axios.get("/reservation/", config),
+        axios.get("/reservation/recent", config),
+        axios.get("/restaurant/", config),
       ]).catch((error) => {
         console.error("Error in Promise.all:", error);
+
         // Fall back to mock data if API endpoints are not ready
         return [
           { data: { count: 120 } },
@@ -173,10 +181,12 @@ const AdminDashboard = () => {
         ];
       });
 
+      console.log("Users Response:", usersResponse.data);
+
       setDashboardData({
-        userCount: usersResponse.data.count || 0,
-        restaurantCount: restaurantsResponse.data.count || 0,
-        reservationCount: reservationsResponse.data.count || 0,
+        userCount: usersResponse.data.data.length || 0,
+        restaurantCount: restaurantsResponse.data.data.length || 0,
+        reservationCount: reservationsResponse.data.data.length || 0,
         recentReservations: recentReservationsResponse.data.data || [],
         topRestaurants: topRestaurantsResponse.data.data || [],
       });
@@ -319,11 +329,11 @@ const AdminDashboard = () => {
             onClick={() => setCollapsed(!collapsed)}
             className="trigger-button"
           />
-          <div className="header-title">
+          {/* <div className="header-title">
             <Title level={4} style={{ margin: 0 }}>
               Bảng Điều Khiển Admin
             </Title>
-          </div>
+          </div> */}
           <div className="header-actions">
             <Button
               type="primary"
@@ -430,7 +440,7 @@ const AdminDashboard = () => {
                         }
                         description={`${moment(reservation.dateTime).format(
                           "DD/MM/YYYY HH:mm"
-                        )} - ${reservation.numberOfGuests} khách`}
+                        )} - ${reservation.numGuests} khách`}
                       />
                     </List.Item>
                   )}

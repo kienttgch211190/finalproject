@@ -45,6 +45,7 @@ import "../../style/Admin/UserMana.scss";
 
 const { Option } = Select;
 const { TextArea } = Input;
+const { Text } = Typography; // Add this line to properly import Typography.Text
 
 const UserMana = () => {
   // State
@@ -90,7 +91,13 @@ const UserMana = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/api/user");
+      const token = localStorage.getItem("accessToken");
+      
+      const response = await axiosInstance.get("/user/get-all-users", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       if (response.data.status === "Success") {
         setUsers(response.data.data || []);
@@ -136,21 +143,26 @@ const UserMana = () => {
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
-
+      const token = localStorage.getItem("accessToken");
+      const headers = {
+        Authorization: `Bearer ${token}`
+      };
+  
       const userData = { ...values };
-
+  
       // Don't send empty password in edit mode
       if (isEditMode && !userData.password) {
         delete userData.password;
       }
-
+  
       if (isEditMode && selectedUser) {
         // Update existing user
         const response = await axiosInstance.put(
-          `/api/user/${selectedUser._id}`,
-          userData
+          `/user/update/${selectedUser._id}`,
+          userData,
+          { headers }
         );
-
+  
         if (response.data.status === "Success") {
           message.success("Cập nhật người dùng thành công!");
           // Update user in state
@@ -167,18 +179,24 @@ const UserMana = () => {
         }
       } else {
         // Create new user
-        const response = await axiosInstance.post("/api/user/signup", userData);
-
+        const response = await axiosInstance.post(
+          "/user/create-user", 
+          userData,
+          { headers }
+        );
+  
         if (response.data.status === "Success") {
           message.success("Tạo người dùng mới thành công!");
           // Add new user to state if the data is returned
           if (response.data.data) {
-            setUsers([...users, response.data.data]);
+            // Use functional update to ensure we're working with the latest state
+            setUsers(currentUsers => [...currentUsers, response.data.data]);
+            setIsModalOpen(false);
           } else {
-            // Otherwise refresh the list
-            fetchUsers();
+            // If data is not returned in the expected format, refresh the list
+            await fetchUsers();
+            setIsModalOpen(false);
           }
-          setIsModalOpen(false);
         } else {
           message.error("Không thể tạo người dùng: " + response.data.message);
         }
@@ -194,11 +212,18 @@ const UserMana = () => {
   const handleRoleChange = async (userId, newRole) => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("accessToken");
 
       // Update user role
-      const response = await axiosInstance.put(`/api/user/${userId}/role`, {
-        role: newRole,
-      });
+      const response = await axiosInstance.put(
+        `/api/user/${userId}/role`, 
+        { role: newRole },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       if (response.data.status === "Success") {
         message.success("Cập nhật vai trò người dùng thành công!");
@@ -229,16 +254,21 @@ const UserMana = () => {
     ) {
       return;
     }
-
+  
     try {
       setLoading(true);
-
-      const response = await axiosInstance.delete(`/api/user/${userId}`);
-
-      if (response.data.status === "Success") {
+      const token = localStorage.getItem("accessToken");
+  
+      const response = await axiosInstance.delete(`/user/delete/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+  
+      if (response.data.message === "User and associated role deleted successfully") {
         message.success("Xóa người dùng thành công!");
-        // Remove user from state
-        setUsers(users.filter((user) => user._id !== userId));
+        // Update the state to remove the deleted user
+        setUsers(prevUsers => prevUsers.filter(user => user._id !== userId));
       } else {
         message.error("Không thể xóa người dùng: " + response.data.message);
       }
@@ -277,20 +307,25 @@ const UserMana = () => {
       key: "user",
       render: (_, record) => (
         <Space>
-          {record.image ? (
-            <Avatar src={record.image} size={40} />
-          ) : (
-            <Avatar size={40} style={{ backgroundColor: "#1976d2" }}>
-              {getInitials(record.name)}
-            </Avatar>
-          )}
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong>{record.name}</Typography.Text>
-            <Typography.Text type="secondary">{record.email}</Typography.Text>
-          </Space>
+          <span>{record.name || "Chưa cập nhật"}</span>
         </Space>
       ),
-      filteredValue: [searchTerm],
+      // render: (_, record) => (
+      //   <Space>
+      //     {record.image ? (
+      //       <Avatar src="" size={40} /> // Replace with actual image URL
+      //     ) : (
+      //       <Avatar size={40} style={{ backgroundColor: "#1976d2" }}>
+      //        Tron``
+      //       </Avatar>
+      //     )}
+      //     <Space direction="vertical" size={0}>
+      //       <Text strong>tron2</Text>
+      //       <Text type="secondary">tron3</Text>
+      //     </Space>
+      //   </Space>
+      // ),
+      filteredValue: searchTerm ? [searchTerm] : null,
       onFilter: () => true, // Filter is applied in the filteredUsers logic
     },
     {
@@ -506,7 +541,7 @@ const UserMana = () => {
               <Form.Item
                 name="phone"
                 label="Số điện thoại"
-                style={{ width: "48%" }}
+                style={{ width: "100%" }}
                 rules={[
                   { required: true, message: "Vui lòng nhập số điện thoại" },
                 ]}
@@ -521,7 +556,7 @@ const UserMana = () => {
                 name="role"
                 label="Vai trò"
                 rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
-                style={{ width: "48%" }}
+                style={{ width: "100%" }}
               >
                 <Select
                   placeholder="Chọn vai trò"
@@ -541,7 +576,6 @@ const UserMana = () => {
               <TextArea
                 rows={3}
                 placeholder="Nhập địa chỉ người dùng"
-                prefix={<HomeOutlined />}
               />
             </Form.Item>
 

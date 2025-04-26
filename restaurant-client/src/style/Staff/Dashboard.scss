@@ -1,89 +1,267 @@
-// Main variables
-$primary-color: #1976d2;
-$secondary-color: #388e3c;
-$primary-light: #e3f2fd;
-$text-light: #f5f5f5;
-$text-dark: #333333;
-$background-light: #ffffff;
-$background-dark: #f5f5f5;
-$border-radius: 8px;
-$box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-$transition: all 0.3s ease;
+@import "../variables.scss";
 
-// Dashboard container
+// Staff Dashboard Layout
 .staff-dashboard {
   min-height: 100vh;
-  background-color: $background-dark;
-}
-
-// App bar
-.staff-appbar {
-  background-color: $secondary-color !important;
-  box-shadow: $box-shadow !important;
-  z-index: 1300 !important;
-}
-
-// Drawer styles
-.MuiDrawer-paper {
-  background-color: $background-light;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-// Dashboard cards
-.summary-card {
-  height: 100%;
-  transition: $transition;
-  border-radius: $border-radius !important;
-  overflow: hidden;
-
-  &:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-    transform: translateY(-3px);
+  
+  .staff-sider {
+    box-shadow: 2px 0 8px 0 rgba(29, 35, 41, 0.05);
+    position: fixed;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    overflow: auto;
+    
+    .logo {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+      
+      span {
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+      
+      .anticon {
+        font-size: 24px;
+      }
+    }
+    
+    .staff-profile {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 16px;
+      
+      .ant-avatar {
+        margin-bottom: 8px;
+        background-color: #1890ff;
+      }
+      
+      .staff-info {
+        text-align: center;
+        white-space: nowrap;
+        
+        .ant-typography {
+          display: block;
+          color: white;
+          
+          &.ant-typography-secondary {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 12px;
+          }
+        }
+      }
+    }
+    
+    .ant-menu-item {
+      padding-left: 24px !important;
+      
+      &.ant-menu-item-selected {
+        background-color: #1890ff;
+      }
+      
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
   }
+  
+  .staff-header {
+    background: white;
+    padding: 0 24px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    width: 100%;
+    z-index: 99;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    .trigger-button {
+      font-size: 18px;
+      color: $text-color;
+    }
+    
+    .header-title {
+      flex-grow: 1;
+      
+      h4 {
+        margin: 0;
+        color: $text-color;
+      }
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+    }
+  }
+  
+  .staff-content {
+    margin: 88px 24px 24px;
+    overflow: initial;
+    background: #f0f2f5;
+    padding: 24px;
+    border-radius: $border-radius;
+    min-height: calc(100vh - 112px);
+    margin-left: 250px;
+    transition: margin-left 0.3s;
+    
+    &.collapsed {
+      margin-left: 80px;
+    }
+  }
+}
 
-  .summary-number {
-    font-weight: 700;
-    margin: 1rem 0;
-    color: $primary-color;
+// Cards styling
+.stat-card {
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  transition: all 0.3s;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ant-statistic-title {
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  
+  .ant-statistic-content {
+    font-size: 28px;
+  }
+  
+  &.reservations {
+    border-top: 3px solid $primary-color;
+  }
+  
+  &.pending {
+    border-top: 3px solid $warning-color;
+  }
+  
+  &.promotions {
+    border-top: 3px solid $success-color;
   }
 }
 
 // Restaurant info card
 .restaurant-info-card {
-  background-color: $primary-light;
-  border-left: 5px solid $secondary-color;
-  transition: $transition;
-
-  &:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  
+  .ant-card-head {
+    border-bottom: 1px solid $border-color;
+    background-color: #fafafa;
   }
 }
 
-// Reservation list items
-.MuiListItem-root {
-  transition: $transition;
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+// Dashboard cards
+.dashboard-card {
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  margin-bottom: 16px;
+  
+  .ant-card-head {
+    border-bottom: 1px solid $border-color;
+    
+    .ant-card-head-title {
+      padding: 16px 0;
+    }
+  }
+  
+  .ant-list {
+    .ant-list-item {
+      padding: 12px 0;
+      border-bottom: 1px solid $border-color;
+      
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.01);
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+  
+  &.pending-card {
+    .ant-list-item {
+      transition: all 0.3s;
+      
+      &:hover {
+        background-color: rgba($warning-color, 0.05);
+      }
+    }
   }
 }
 
-// Responsive adjustments
-@media (max-width: 600px) {
-  .staff-dashboard {
-    .MuiContainer-root {
-      padding: 12px;
-    }
-
-    .MuiCard-root,
-    .MuiPaper-root {
-      margin-bottom: 16px;
-    }
+// Promotion cards
+.promotion-card {
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s;
+  height: 100%;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   }
+  
+  .promotion-discount {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: $primary-color;
+    color: white;
+    padding: 6px 12px;
+    border-bottom-left-radius: $border-radius;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  .promotion-content {
+    padding: 16px;
+    padding-top: 24px;
+  }
+  
+  .promotion-date {
+    margin-top: 12px;
+    font-size: 12px;
+    color: $text-color-secondary;
+  }
+}
+
+// Empty states
+.empty-promotions {
+  padding: 24px;
+  text-align: center;
+  background: #fafafa;
+  border-radius: $border-radius;
+}
+
+// Loading container
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f2f5;
 }
 
 // Animations
-@keyframes fadeIn {
+@keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -94,28 +272,40 @@ $transition: all 0.3s ease;
   }
 }
 
-.MuiGrid-item {
-  animation: fadeIn 0.5s forwards;
+.stat-card {
+  animation: fadeInUp 0.5s forwards;
 }
 
-// Staggered animation for grid items
-@for $i from 1 through 10 {
-  .MuiGrid-item:nth-child(#{$i}) {
+.dashboard-card {
+  animation: fadeInUp 0.5s forwards;
+}
+
+@for $i from 1 through 3 {
+  .stat-card:nth-child(#{$i}) {
     animation-delay: #{$i * 0.1}s;
   }
 }
 
-// Status colors
-.MuiChip-root {
-  &.MuiChip-colorSuccess {
-    background-color: rgba(46, 125, 50, 0.1);
-  }
-
-  &.MuiChip-colorWarning {
-    background-color: rgba(237, 108, 2, 0.1);
-  }
-
-  &.MuiChip-colorError {
-    background-color: rgba(211, 47, 47, 0.1);
+@media (max-width: 768px) {
+  .staff-dashboard {
+    .staff-sider {
+      z-index: 1000;
+    }
+    
+    .staff-content {
+      margin-left: 0 !important;
+      padding: 16px;
+      margin-top: 64px;
+    }
+    
+    .ant-row {
+      margin-right: 0 !important;
+      margin-left: 0 !important;
+    }
+    
+    .ant-col {
+      padding-right: 0 !important;
+      padding-left: 0 !important;
+    }
   }
 }

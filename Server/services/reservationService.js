@@ -77,6 +77,34 @@ const getAvailableTables = async (
   }
 };
 
+// Add this function to reservationService.js
+const getAllReservationsAdmin = async (query = {}) => {
+  try {
+    // Build filters based on query parameters (for future enhancement)
+    const filters = {};
+    
+    if (query.status) {
+      filters.status = query.status;
+    }
+    
+    // You can add more filters here as needed
+    
+    // Get all reservations with populated references
+    const reservations = await Reservation.find(filters)
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table");
+
+    return { 
+      status: "Success", 
+      message: "Reservations retrieved successfully",
+      data: reservations 
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
 const createReservation = async (reservationData) => {
   try {
     const {
@@ -258,6 +286,98 @@ const getReservationById = async (id) => {
   }
 };
 
+// Get recent reservations (within the last day)
+const getRecentReservations = async (limit = 5) => {
+  try {
+    // Calculate date one day ago
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    // Get recent reservations from the last day
+    const reservations = await Reservation.find({
+      createdAt: { $gte: oneDayAgo }
+    })
+    .sort({ createdAt: -1 }) // Sort by newest first
+    .limit(limit)
+    .populate("user", "name email phone")
+    .populate("restaurant", "name address")
+    .populate("table", "tableNumber capacity");
+
+    return { 
+      status: "Success", 
+      message: "Recent reservations retrieved successfully",
+      data: reservations 
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
+// Get reservations for a restaurant for today
+const getRestaurantTodayReservations = async (restaurantId) => {
+  try {
+    if (!restaurantId) {
+      return { status: "Error", message: "Restaurant ID is required" };
+    }
+    
+    // Get start and end of today in local time
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Find all reservations for the restaurant today
+    const reservations = await Reservation.find({
+      restaurant: restaurantId,
+      reservationDate: {
+        $gte: today,
+        $lt: tomorrow
+      },
+      status: { $ne: "cancelled" }
+    })
+    .populate("user", "name email phone")
+    .populate("restaurant", "name address")
+    .populate("table", "tableNumber capacity")
+    .sort({ reservationTime: 1 }); // Sort by time ascending
+    
+    return {
+      status: "Success",
+      message: "Today's reservations retrieved successfully",
+      data: reservations
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
+// Get pending reservations for a restaurant
+const getRestaurantPendingReservations = async (restaurantId) => {
+  try {
+    if (!restaurantId) {
+      return { status: "Error", message: "Restaurant ID is required" };
+    }
+    
+    // Find all pending reservations for the restaurant
+    const pendingReservations = await Reservation.find({
+      restaurant: restaurantId,
+      status: "pending"
+    })
+    .populate("user", "name email phone")
+    .populate("restaurant", "name address")
+    .populate("table", "tableNumber capacity")
+    .sort({ reservationDate: 1, reservationTime: 1 }); // Sort by date and time
+    
+    return {
+      status: "Success",
+      message: "Pending reservations retrieved successfully",
+      data: pendingReservations
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
 module.exports = {
   getAvailableTables,
   createReservation,
@@ -266,4 +386,8 @@ module.exports = {
   getAllReservations,
   updateReservationStatus,
   getReservationById,
+  getAllReservationsAdmin,
+  getRecentReservations,
+  getRestaurantTodayReservations,
+  getRestaurantPendingReservations,
 };

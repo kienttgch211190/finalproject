@@ -12,14 +12,14 @@ const {
   updateMenuItem,
   deleteMenuItem,
 } = require("../controllers/menuController");
-const { authMiddleware, isStaff } = require("../middlewares/middleware");
+const { authMiddleware, isStaff, isAdmin } = require("../middlewares/middleware");
 
 /**
  * @route POST /api/menu
  * @desc Create a new menu
  * @access Private (Staff only)
  */
-router.post("/", authMiddleware("access"), isStaff, createMenu);
+router.post("/", authMiddleware("access"), isAdmin, createMenu);
 
 /**
  * @route GET /api/menu/restaurant/:restaurantId
@@ -40,21 +40,21 @@ router.get("/:menuId", getMenuById);
  * @desc Update a menu
  * @access Private (Staff only)
  */
-router.put("/:menuId", authMiddleware("access"), isStaff, updateMenu);
+router.put("/:menuId", authMiddleware("access"), isAdmin, updateMenu);
 
 /**
  * @route DELETE /api/menu/:menuId
  * @desc Delete a menu and all its items
  * @access Private (Staff only)
  */
-router.delete("/:menuId", authMiddleware("access"), isStaff, deleteMenu);
+router.delete("/:menuId", authMiddleware("access"), isAdmin, deleteMenu);
 
 /**
  * @route POST /api/menu/item
  * @desc Create a new menu item
  * @access Private (Staff only)
  */
-router.post("/item", authMiddleware("access"), isStaff, createMenuItem);
+router.post("/item", authMiddleware("access"), isAdmin, createMenuItem);
 
 /**
  * @route GET /api/menu/:menuId/items
@@ -75,7 +75,7 @@ router.get("/item/:itemId", getMenuItemById);
  * @desc Update a menu item
  * @access Private (Staff only)
  */
-router.put("/item/:itemId", authMiddleware("access"), isStaff, updateMenuItem);
+router.put("/item/:itemId", authMiddleware("access"), isAdmin, updateMenuItem);
 
 /**
  * @route DELETE /api/menu/item/:itemId
@@ -85,7 +85,7 @@ router.put("/item/:itemId", authMiddleware("access"), isStaff, updateMenuItem);
 router.delete(
   "/item/:itemId",
   authMiddleware("access"),
-  isStaff,
+  isAdmin,
   deleteMenuItem
 );
 

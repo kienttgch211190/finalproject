@@ -1,0 +1,214 @@
+@import "../variables.scss";
+
+// Menu Management container styling for Staff
+.staff-menu-management {
+  .ant-table-thead > tr > th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+  }
+
+  .ant-btn-primary {
+    background-color: #1976d2;
+  }
+
+  .ant-select-selector {
+    border-radius: 4px !important;
+  }
+
+  // Tag colors
+  .ant-tag-success {
+    color: #2e7d32;
+    background: rgba(#2e7d32, 0.1);
+    border-color: rgba(#2e7d32, 0.2);
+  }
+
+  .ant-tag-processing, .ant-tag-blue {
+    color: #1976d2;
+    background: rgba(#1976d2, 0.1);
+    border-color: rgba(#1976d2, 0.2);
+  }
+
+  .ant-tag-error {
+    color: #d32f2f;
+    background: rgba(#d32f2f, 0.1);
+    border-color: rgba(#d32f2f, 0.2);
+  }
+
+  // Menu cards grid layout
+  .menu-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .menu-card {
+    transition: all 0.3s;
+    height: 100%;
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+    
+    &.selected {
+      border: 2px solid #1976d2;
+      box-shadow: 0 0 10px rgba(25, 118, 210, 0.4);
+    }
+  }
+
+  // Tab styling
+  .menu-tabs {
+    .ant-tabs-tab {
+      font-size: 16px;
+      padding: 8px 16px;
+      
+      &.ant-tabs-tab-active {
+        font-weight: 600;
+      }
+    }
+
+    .ant-tabs-tab-btn {
+      outline: none !important;
+    }
+
+    .ant-tabs-content {
+      min-height: 200px;
+    }
+  }
+
+  .ant-table-row {
+    &:hover {
+      td {
+        background-color: rgba(25, 118, 210, 0.04) !important;
+      }
+    }
+  }
+
+  // Animation
+  .ant-table-tbody > tr {
+    animation: fadeIn 0.5s ease-in-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // Animation delay for rows
+  @for $i from 1 through 10 {
+    .ant-table-tbody > tr:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
+    }
+  }
+
+  // Form styling
+  .ant-form-item-label > label {
+    font-weight: 500;
+    color: #333;
+  }
+
+  .ant-input,
+  .ant-input-number,
+  .ant-select,
+  .ant-picker {
+    border-radius: 4px;
+    &:hover,
+    &:focus {
+      border-color: #1976d2;
+    }
+  }
+
+  // Modal styling
+  .ant-modal-header {
+    background-color: #1976d2;
+    color: white;
+    border-radius: 8px 8px 0 0;
+
+    .ant-modal-title {
+      color: white;
+      font-weight: 500;
+    }
+  }
+
+  .ant-modal-content {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ant-modal-footer {
+    border-top: 1px solid #f0f0f0;
+  }
+
+  // Food item preview
+  .food-item-preview {
+    display: flex;
+    flex-direction: column;
+    
+    .preview-image-container {
+      margin-bottom: 16px;
+      text-align: center;
+      border-radius: 8px;
+      overflow: hidden;
+      
+      img {
+        max-height: 300px;
+        object-fit: contain;
+      }
+    }
+    
+    .preview-details {
+      .preview-price {
+        margin: 16px 0;
+        color: #1976d2;
+      }
+      
+      .preview-description {
+        background-color: #f9f9f9;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+    }
+  }
+
+  // Avatar and images
+  img {
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #eee;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .staff-menu-management {
+    .menu-cards-container {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    
+    .food-item-preview {
+      flex-direction: column;
+      
+      .preview-image-container {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 16px;
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .staff-menu-management {
+    .menu-cards-container {
+      grid-template-columns: 1fr;
+    }
+  }
+}

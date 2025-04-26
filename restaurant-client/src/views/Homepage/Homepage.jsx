@@ -1,48 +1,52 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "../../contexts/AxiosCustom";
-import { toast } from "react-toastify";
 import {
-  Box,
+  Layout,
   Typography,
-  Container,
-  Grid,
+  Row,
+  Col,
   Card,
-  CardContent,
-  CardMedia,
   Button,
-  TextField,
-  FormControl,
-  InputLabel,
+  Input,
   Select,
-  MenuItem,
-  Paper,
-  CircularProgress,
-  Rating,
+  DatePicker,
+  TimePicker,
+  Rate,
+  Tag,
+  Spin,
   Divider,
-  Chip,
-  useTheme,
-  useMediaQuery,
-  InputAdornment,
-} from "@mui/material";
+  Badge,
+  Empty,
+  Space,
+  Drawer,
+  message,
+} from "antd";
 import {
-  Search,
-  Restaurant as RestaurantIcon,
-  DateRange,
-  Schedule,
-  AttachMoney,
-  FilterList,
-  People,
-  LocationOn,
-  Fastfood,
-} from "@mui/icons-material";
+  SearchOutlined,
+  EnvironmentOutlined,
+  ClockCircleOutlined,
+  ShopOutlined,
+  DollarOutlined,
+  UsergroupAddOutlined,
+  CalendarOutlined,
+  FilterOutlined,
+  ClearOutlined,
+  FireOutlined,
+  MenuOutlined,
+} from "@ant-design/icons";
+import axios from "../../contexts/AxiosCustom";
+import moment from "moment";
 
 // Import CSS
 import "../../style/Homepage/Homepage.scss";
 
+const { Header, Content, Footer } = Layout;
+const { Title, Text, Paragraph } = Typography;
+const { Meta } = Card;
+const { Search } = Input;
+const { Option } = Select;
+
 const Homepage = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState([]);
@@ -53,11 +57,11 @@ const Homepage = () => {
     searchTerm: "",
   });
   const [reservationParams, setReservationParams] = useState({
-    date: "",
-    time: "",
+    date: moment(),
+    time: moment(),
     guests: 2,
   });
-  const [showFilters, setShowFilters] = useState(!isMobile);
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   // Get user information from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -72,19 +76,19 @@ const Homepage = () => {
         if (filters.priceRange) params.priceRange = filters.priceRange;
 
         const [restaurantsResponse, promotionsResponse] = await Promise.all([
-          axios.get(`/restaurant`, { params }),
-          axios.get(`/promotion/active`),
+          axios.get(`/api/restaurant`, { params }),
+          axios.get(`/api/promotion/active`),
         ]);
 
         if (restaurantsResponse.data.status === "Success") {
-          let filteredRestaurants = restaurantsResponse.data.data;
+          let filteredRestaurants = restaurantsResponse.data.data || [];
 
           // Apply search term filter
           if (filters.searchTerm) {
             const searchLower = filters.searchTerm.toLowerCase();
             filteredRestaurants = filteredRestaurants.filter(
               (restaurant) =>
-                restaurant.name.toLowerCase().includes(searchLower) ||
+                restaurant.name?.toLowerCase().includes(searchLower) ||
                 restaurant.cuisineType?.toLowerCase().includes(searchLower) ||
                 restaurant.address?.toLowerCase().includes(searchLower)
             );
@@ -94,11 +98,13 @@ const Homepage = () => {
         }
 
         if (promotionsResponse.data.status === "Success") {
-          setPromotions(promotionsResponse.data.data);
+          setPromotions(promotionsResponse.data.data || []);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
+        message.error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
+        setRestaurants([]);
+        setPromotions([]);
       } finally {
         setLoading(false);
       }
@@ -107,16 +113,14 @@ const Homepage = () => {
     fetchData();
   }, [filters.cuisineType, filters.priceRange, filters.searchTerm]);
 
-  const handleFilterChange = (event) => {
-    const { name, value } = event.target;
+  const handleFilterChange = (name, value) => {
     setFilters((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleReservationParamChange = (event) => {
-    const { name, value } = event.target;
+  const handleReservationParamChange = (name, value) => {
     setReservationParams((prev) => ({
       ...prev,
       [name]: value,
@@ -129,6 +133,7 @@ const Homepage = () => {
       priceRange: "",
       searchTerm: "",
     });
+    message.success("Đã xóa tất cả bộ lọc");
   };
 
   const handleRestaurantClick = (restaurantId) => {
@@ -137,431 +142,454 @@ const Homepage = () => {
 
   const handleStartReservation = (restaurantId) => {
     const { date, time, guests } = reservationParams;
+
     if (!date || !time) {
-      toast.warning("Vui lòng chọn ngày và giờ đặt bàn");
+      message.warning("Vui lòng chọn ngày và giờ đặt bàn");
       return;
     }
+
     navigate(`/reservation/new`, {
       state: {
         restaurantId,
-        date,
-        time,
+        date: date.format("YYYY-MM-DD"),
+        time: time.format("HH:mm"),
         guests,
       },
     });
   };
 
   // Format price range for display
-  const formatPriceRange = (range) => {
+  const renderPriceRange = (range) => {
     switch (range) {
       case "low":
-        return (
-          <>
-            <AttachMoney />
-          </>
-        );
+        return <DollarOutlined style={{ color: "#52c41a" }} />;
       case "medium":
         return (
           <>
-            <AttachMoney />
-            <AttachMoney />
+            <DollarOutlined style={{ color: "#1890ff" }} />
+            <DollarOutlined style={{ color: "#1890ff" }} />
           </>
         );
       case "high":
         return (
           <>
-            <AttachMoney />
-            <AttachMoney />
-            <AttachMoney />
+            <DollarOutlined style={{ color: "#f5222d" }} />
+            <DollarOutlined style={{ color: "#f5222d" }} />
+            <DollarOutlined style={{ color: "#f5222d" }} />
           </>
         );
       default:
-        return (
-          <>
-            <AttachMoney />
-          </>
-        );
+        return <DollarOutlined style={{ color: "#1890ff" }} />;
     }
   };
 
+  const renderPriceRangeTag = (priceRange) => {
+    const priceRangeConfig = {
+      low: { color: "success", text: "Giá rẻ" },
+      medium: { color: "processing", text: "Giá vừa phải" },
+      high: { color: "error", text: "Cao cấp" },
+    };
+
+    const config = priceRangeConfig[priceRange] || priceRangeConfig.medium;
+
+    return (
+      <Tag color={config.color} icon={<DollarOutlined />}>
+        {config.text}
+      </Tag>
+    );
+  };
+
+  // Cuisine type options
+  const cuisineTypeOptions = [
+    { value: "vietnamese", label: "Việt Nam" },
+    { value: "italian", label: "Ý" },
+    { value: "japanese", label: "Nhật Bản" },
+    { value: "korean", label: "Hàn Quốc" },
+    { value: "chinese", label: "Trung Hoa" },
+    { value: "thai", label: "Thái Lan" },
+    { value: "french", label: "Pháp" },
+    { value: "american", label: "Mỹ" },
+    { value: "seafood", label: "Hải sản" },
+  ];
+
+  // Price range options
+  const priceRangeOptions = [
+    { value: "low", label: "Thấp" },
+    { value: "medium", label: "Trung bình" },
+    { value: "high", label: "Cao" },
+  ];
+
+  // Guest count options
+  const guestCountOptions = Array.from({ length: 10 }, (_, i) => i + 1).concat([
+    { value: 11, label: "10+" },
+  ]);
+
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="loading-container">
+        <Spin size="large" tip="Đang tải dữ liệu..." />
+      </div>
     );
   }
 
   return (
-    <Box className="homepage-container">
+    <Layout className="homepage-layout">
       {/* Hero Section */}
-      <Box className="hero-section">
-        <Container>
-          <Typography variant="h3" component="h1" className="hero-title">
+      <div className="hero-section">
+        <div className="hero-content">
+          <Title className="hero-title">
             Đặt bàn dễ dàng tại nhà hàng bạn yêu thích
-          </Typography>
-          <Typography variant="h6" className="hero-subtitle">
+          </Title>
+          <Paragraph className="hero-subtitle">
             Trải nghiệm ẩm thực tuyệt vời chỉ với vài cú nhấp chuột
-          </Typography>
+          </Paragraph>
 
-          <Paper elevation={3} className="search-container">
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  name="searchTerm"
-                  value={filters.searchTerm}
-                  onChange={handleFilterChange}
+          <Card className="search-card">
+            <Row gutter={[16, 16]} align="middle">
+              <Col xs={24} md={8} lg={6}>
+                <Search
                   placeholder="Tìm kiếm nhà hàng..."
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                  }}
+                  allowClear
+                  value={filters.searchTerm}
+                  onChange={(e) =>
+                    handleFilterChange("searchTerm", e.target.value)
+                  }
                 />
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  name="date"
+              </Col>
+
+              <Col xs={24} sm={12} md={4} lg={4}>
+                <DatePicker
+                  style={{ width: "100%" }}
+                  placeholder="Ngày đặt bàn"
+                  format="DD/MM/YYYY"
                   value={reservationParams.date}
-                  onChange={handleReservationParamChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <DateRange />
-                      </InputAdornment>
-                    ),
+                  onChange={(date) =>
+                    handleReservationParamChange("date", date)
+                  }
+                  disabledDate={(current) => {
+                    // Không cho phép chọn ngày trong quá khứ
+                    return current && current < moment().startOf("day");
                   }}
                 />
-              </Grid>
-              <Grid item xs={6} md={2}>
-                <TextField
-                  fullWidth
-                  type="time"
-                  name="time"
+              </Col>
+
+              <Col xs={12} sm={6} md={4} lg={4}>
+                <TimePicker
+                  style={{ width: "100%" }}
+                  placeholder="Giờ đặt bàn"
+                  format="HH:mm"
                   value={reservationParams.time}
-                  onChange={handleReservationParamChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Schedule />
-                      </InputAdornment>
-                    ),
-                  }}
+                  onChange={(time) =>
+                    handleReservationParamChange("time", time)
+                  }
                 />
-              </Grid>
-              <Grid item xs={6} md={2}>
-                <FormControl fullWidth>
-                  <InputLabel id="guests-label">Số khách</InputLabel>
-                  <Select
-                    labelId="guests-label"
-                    name="guests"
-                    value={reservationParams.guests}
-                    onChange={handleReservationParamChange}
-                    startAdornment={<People sx={{ mr: 1 }} />}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                      <MenuItem key={num} value={num}>
-                        {num} người
-                      </MenuItem>
-                    ))}
-                    <MenuItem value={11}>10+ người</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={3}>
+              </Col>
+
+              <Col xs={12} sm={6} md={4} lg={4}>
+                <Select
+                  style={{ width: "100%" }}
+                  placeholder="Số khách"
+                  value={reservationParams.guests}
+                  onChange={(value) =>
+                    handleReservationParamChange("guests", value)
+                  }
+                >
+                  {guestCountOptions.map((guests, index) => (
+                    <Option
+                      key={index}
+                      value={typeof guests === "object" ? guests.value : guests}
+                    >
+                      {typeof guests === "object"
+                        ? guests.label
+                        : `${guests} người`}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
+
+              <Col xs={24} md={4} lg={6}>
                 <Button
-                  fullWidth
-                  variant="contained"
-                  className="search-button"
-                  startIcon={<Search />}
+                  type="primary"
+                  block
+                  icon={<SearchOutlined />}
                   onClick={() => {
                     if (restaurants.length > 0) {
                       handleStartReservation(restaurants[0]._id);
                     } else {
-                      toast.info("Không tìm thấy nhà hàng phù hợp");
+                      message.info("Không tìm thấy nhà hàng phù hợp");
                     }
                   }}
+                  className="search-button"
                 >
                   Tìm bàn
                 </Button>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Container>
-      </Box>
+              </Col>
+            </Row>
+          </Card>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <Container className="main-content">
+      <Content className="main-content">
         {/* Promotions Section */}
         {promotions.length > 0 && (
-          <Box mt={4} mb={6}>
-            <Typography variant="h4" component="h2" gutterBottom>
-              Khuyến mãi đặc biệt
-            </Typography>
-            <Grid container spacing={3}>
+          <div className="section-container">
+            <Title level={2} className="section-title">
+              <FireOutlined /> Khuyến mãi đặc biệt
+            </Title>
+
+            <Row gutter={[24, 24]}>
               {promotions.slice(0, 3).map((promotion) => (
-                <Grid item xs={12} md={4} key={promotion._id}>
-                  <Paper
-                    elevation={3}
-                    className="promotion-card"
-                    onClick={() =>
-                      handleRestaurantClick(promotion.restaurant._id)
+                <Col xs={24} sm={12} md={8} key={promotion._id}>
+                  <Badge.Ribbon
+                    text={
+                      promotion.type === "percentage"
+                        ? `${promotion.value}%`
+                        : `${promotion.value.toLocaleString()}đ`
                     }
+                    color="#ff4d4f"
+                    className="promotion-ribbon"
                   >
-                    <Box className="promotion-discount">
-                      <Typography variant="h5">
-                        {promotion.discountPercent}%
-                      </Typography>
-                    </Box>
-                    <Box p={2}>
-                      <Typography variant="h6" gutterBottom>
-                        {promotion.title}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {promotion.description}
-                      </Typography>
-                      <Box mt={1} display="flex" alignItems="center">
-                        <RestaurantIcon
-                          sx={{ fontSize: 18, mr: 0.5 }}
-                          color="primary"
-                        />
-                        <Typography variant="subtitle2">
-                          {promotion.restaurant?.name}
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        color="textSecondary"
-                      >
-                        Có hiệu lực đến:{" "}
-                        {new Date(promotion.endDate).toLocaleDateString(
-                          "vi-VN"
-                        )}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Grid>
+                    <Card
+                      hoverable
+                      className="promotion-card"
+                      onClick={() =>
+                        handleRestaurantClick(promotion.restaurant?._id)
+                      }
+                      cover={
+                        <div className="promotion-cover">
+                          <img
+                            alt={promotion.name}
+                            src={`https://source.unsplash.com/random/?restaurant,${
+                              promotion.restaurant?.cuisineType || "food"
+                            }`}
+                          />
+                        </div>
+                      }
+                    >
+                      <Meta
+                        title={promotion.name}
+                        description={promotion.description || "Không có mô tả"}
+                      />
+                      <div className="promotion-details">
+                        <Space>
+                          <ShopOutlined />
+                          <Text strong>
+                            {promotion.restaurant?.name || "Nhà hàng"}
+                          </Text>
+                        </Space>
+                        <div className="promotion-expiry">
+                          <CalendarOutlined /> Hết hạn:{" "}
+                          {moment(promotion.endDate).format("DD/MM/YYYY")}
+                        </div>
+                      </div>
+                    </Card>
+                  </Badge.Ribbon>
+                </Col>
               ))}
-            </Grid>
-          </Box>
+            </Row>
+          </div>
         )}
 
-        {/* Filter Toggle Button (Mobile) */}
-        {isMobile && (
+        {/* Mobile Filter Button */}
+        <div className="mobile-filter-button">
           <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<FilterList />}
-            onClick={() => setShowFilters(!showFilters)}
-            sx={{ mb: 2 }}
+            type="primary"
+            icon={<FilterOutlined />}
+            onClick={() => setShowFilterDrawer(true)}
+            size="large"
           >
-            {showFilters ? "Ẩn bộ lọc" : "Hiển thị bộ lọc"}
+            Bộ lọc
           </Button>
-        )}
+        </div>
 
         {/* Restaurant List Section */}
-        <Box mb={4}>
-          <Typography variant="h4" component="h2" gutterBottom>
-            Nhà hàng
-          </Typography>
+        <div className="section-container">
+          <div className="section-header">
+            <Title level={2} className="section-title">
+              <ShopOutlined /> Nhà hàng
+            </Title>
 
-          <Grid container spacing={3}>
-            {/* Filter Sidebar */}
-            {showFilters && (
-              <Grid item xs={12} md={3} lg={2}>
-                <Paper elevation={3} className="filter-sidebar">
-                  <Typography variant="h6" gutterBottom>
-                    Bộ lọc
-                  </Typography>
-
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Loại ẩm thực</InputLabel>
-                    <Select
-                      name="cuisineType"
-                      value={filters.cuisineType}
-                      onChange={handleFilterChange}
-                      startAdornment={<Fastfood sx={{ mr: 1 }} />}
-                    >
-                      <MenuItem value="">Tất cả</MenuItem>
-                      <MenuItem value="vietnamese">Việt Nam</MenuItem>
-                      <MenuItem value="italian">Ý</MenuItem>
-                      <MenuItem value="japanese">Nhật Bản</MenuItem>
-                      <MenuItem value="korean">Hàn Quốc</MenuItem>
-                      <MenuItem value="chinese">Trung Hoa</MenuItem>
-                      <MenuItem value="thai">Thái Lan</MenuItem>
-                      <MenuItem value="french">Pháp</MenuItem>
-                      <MenuItem value="american">Mỹ</MenuItem>
-                      <MenuItem value="seafood">Hải sản</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Mức giá</InputLabel>
-                    <Select
-                      name="priceRange"
-                      value={filters.priceRange}
-                      onChange={handleFilterChange}
-                      startAdornment={<AttachMoney sx={{ mr: 1 }} />}
-                    >
-                      <MenuItem value="">Tất cả</MenuItem>
-                      <MenuItem value="low">Thấp</MenuItem>
-                      <MenuItem value="medium">Trung bình</MenuItem>
-                      <MenuItem value="high">Cao</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={handleClearFilters}
-                    sx={{ mt: 2 }}
-                  >
-                    Xóa bộ lọc
-                  </Button>
-                </Paper>
-              </Grid>
-            )}
-
-            {/* Restaurant Cards */}
-            <Grid
-              item
-              xs={12}
-              md={showFilters ? 9 : 12}
-              lg={showFilters ? 10 : 12}
-            >
-              {restaurants.length === 0 ? (
-                <Paper elevation={3} className="no-results">
-                  <Typography align="center">
-                    Không tìm thấy nhà hàng phù hợp với yêu cầu của bạn.
-                  </Typography>
-                </Paper>
-              ) : (
-                <Grid container spacing={3}>
-                  {restaurants.map((restaurant) => (
-                    <Grid
-                      item
-                      xs={12}
-                      sm={6}
-                      md={6}
-                      lg={4}
-                      key={restaurant._id}
-                    >
-                      <Card
-                        className="restaurant-card"
-                        onClick={() => handleRestaurantClick(restaurant._id)}
-                      >
-                        <CardMedia
-                          component="img"
-                          height="180"
-                          image={`https://source.unsplash.com/random/?restaurant,${
-                            restaurant.cuisineType || "food"
-                          }`}
-                          alt={restaurant.name}
-                        />
-                        <CardContent>
-                          <Typography gutterBottom variant="h6" component="h3">
-                            {restaurant.name}
-                          </Typography>
-
-                          <Box display="flex" alignItems="center" mb={1}>
-                            <Rating
-                              value={4.5}
-                              precision={0.5}
-                              size="small"
-                              readOnly
-                            />
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              ml={1}
-                            >
-                              4.5 (120)
-                            </Typography>
-                          </Box>
-
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mb: 1 }}
-                          >
-                            <Fastfood
-                              fontSize="small"
-                              sx={{ verticalAlign: "middle", mr: 1 }}
-                            />
-                            {restaurant.cuisineType || "Đa dạng"}
-                          </Typography>
-
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mb: 1 }}
-                          >
-                            <LocationOn
-                              fontSize="small"
-                              sx={{ verticalAlign: "middle", mr: 1 }}
-                            />
-                            {restaurant.address}
-                          </Typography>
-
-                          <Box
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="space-between"
-                            mt={1}
-                          >
-                            <Chip
-                              label={formatPriceRange(restaurant.priceRange)}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                            />
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {restaurant.openingTime} -{" "}
-                                {restaurant.closingTime}
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          <Button
-                            variant="contained"
-                            fullWidth
-                            color="primary"
-                            sx={{ mt: 2 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartReservation(restaurant._id);
-                            }}
-                          >
-                            Đặt bàn
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </Grid>
+            <div className="desktop-filters">
+              <Space size="middle">
+                <Select
+                  placeholder="Loại ẩm thực"
+                  style={{ width: 150 }}
+                  value={filters.cuisineType}
+                  onChange={(value) => handleFilterChange("cuisineType", value)}
+                  allowClear
+                >
+                  {cuisineTypeOptions.map((option) => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
                   ))}
-                </Grid>
-              )}
-            </Grid>
-          </Grid>
-        </Box>
-      </Container>
-    </Box>
+                </Select>
+
+                <Select
+                  placeholder="Mức giá"
+                  style={{ width: 130 }}
+                  value={filters.priceRange}
+                  onChange={(value) => handleFilterChange("priceRange", value)}
+                  allowClear
+                >
+                  {priceRangeOptions.map((option) => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+
+                <Button icon={<ClearOutlined />} onClick={handleClearFilters}>
+                  Xóa bộ lọc
+                </Button>
+              </Space>
+            </div>
+          </div>
+
+          {restaurants.length === 0 ? (
+            <Empty
+              description="Không tìm thấy nhà hàng phù hợp với yêu cầu của bạn"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          ) : (
+            <Row gutter={[24, 24]}>
+              {restaurants.map((restaurant) => (
+                <Col xs={24} sm={12} md={8} lg={6} key={restaurant._id}>
+                  <Card
+                    hoverable
+                    className="restaurant-card"
+                    onClick={() => handleRestaurantClick(restaurant._id)}
+                    cover={
+                      <div className="restaurant-image">
+                        <img
+                          alt={restaurant.name}
+                          src={
+                            restaurant.imageUrl ||
+                            `https://source.unsplash.com/random/?restaurant,${
+                              restaurant.cuisineType || "food"
+                            }`
+                          }
+                        />
+                      </div>
+                    }
+                    actions={[
+                      <Button
+                        type="primary"
+                        block
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartReservation(restaurant._id);
+                        }}
+                      >
+                        Đặt bàn
+                      </Button>,
+                    ]}
+                  >
+                    <Meta
+                      title={restaurant.name}
+                      description={
+                        <Space
+                          direction="vertical"
+                          size={1}
+                          style={{ width: "100%" }}
+                        >
+                          <Space align="center">
+                            <Rate
+                              disabled
+                              defaultValue={4.5}
+                              style={{ fontSize: "14px" }}
+                            />
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              4.5 (120)
+                            </Text>
+                          </Space>
+                          <Text type="secondary">
+                            <MenuOutlined />{" "}
+                            {restaurant.cuisineType || "Đa dạng"}
+                          </Text>
+                          <Text
+                            type="secondary"
+                            ellipsis
+                            style={{ width: "100%" }}
+                          >
+                            <EnvironmentOutlined /> {restaurant.address}
+                          </Text>
+                          <div className="restaurant-details">
+                            {renderPriceRangeTag(restaurant.priceRange)}
+                            <Text type="secondary">
+                              <ClockCircleOutlined />{" "}
+                              {restaurant.openingTime || "08:00"} -{" "}
+                              {restaurant.closingTime || "22:00"}
+                            </Text>
+                          </div>
+                        </Space>
+                      }
+                    />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </div>
+
+        {/* Filter Drawer for Mobile */}
+        <Drawer
+          title="Bộ lọc"
+          placement="right"
+          onClose={() => setShowFilterDrawer(false)}
+          visible={showFilterDrawer}
+        >
+          <Space direction="vertical" style={{ width: "100%" }} size="large">
+            <div>
+              <Text strong>Loại ẩm thực</Text>
+              <Select
+                placeholder="Chọn loại ẩm thực"
+                style={{ width: "100%", marginTop: 8 }}
+                value={filters.cuisineType}
+                onChange={(value) => handleFilterChange("cuisineType", value)}
+                allowClear
+              >
+                {cuisineTypeOptions.map((option) => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <Text strong>Mức giá</Text>
+              <Select
+                placeholder="Chọn mức giá"
+                style={{ width: "100%", marginTop: 8 }}
+                value={filters.priceRange}
+                onChange={(value) => handleFilterChange("priceRange", value)}
+                allowClear
+              >
+                {priceRangeOptions.map((option) => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+
+            <Button block onClick={handleClearFilters} icon={<ClearOutlined />}>
+              Xóa bộ lọc
+            </Button>
+
+            <Button
+              type="primary"
+              block
+              onClick={() => setShowFilterDrawer(false)}
+            >
+              Áp dụng
+            </Button>
+          </Space>
+        </Drawer>
+      </Content>
+    </Layout>
   );
 };
 

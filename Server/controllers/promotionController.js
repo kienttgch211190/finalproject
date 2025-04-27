@@ -115,6 +115,25 @@ const deletePromotion = async (req, res) => {
   }
 };
 
+// Get active promotions for a specific restaurant
+const getRestaurantActivePromotions = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+
+    const result = await promotionService.getRestaurantActivePromotions(restaurantId);
+
+    if (result.status === "Success") {
+      res.status(200).json(result);
+    } else {
+      res
+        .status(result.message === "Restaurant not found" ? 404 : 500)
+        .json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
 module.exports = {
   createPromotion,
   getRestaurantPromotions,
@@ -122,4 +141,5 @@ module.exports = {
   getPromotionById,
   updatePromotion,
   deletePromotion,
+  getRestaurantActivePromotions,
 };

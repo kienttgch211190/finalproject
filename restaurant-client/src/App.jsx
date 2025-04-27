@@ -4,9 +4,13 @@ import Login from "./views/Login/Login";
 import Register from "./views/Register/Register";
 import Homepage from "./views/Homepage/Homepage";
 import AdminMenu from "./views/Menu/AdminMenu";
+import StaffMenu from "./views/Menu/StaffMenu";
+import Reservation from "./views/Staff/Reservation";
+import RestaurantInfo from "./views/Staff/RestaurantInfo";
 import RestaurantMana from "./views/Admin/RestaurantMana";
 import UserMana from "./views/Admin/UserMana";
 import ReservationMana from "./views/Admin/ReservationMana";
+import TableMana from "./views/Staff/TableMana";
 import Promotion from "./views/Admin/Promotion";
 import AdminDashboard from "./views/Admin/Dashboard";
 import StaffDashboard from "./views/Staff/Dashboard";
@@ -143,7 +147,7 @@ function App() {
           path="/staff/restaurant"
           element={
             <RoleBasedRoute allowedRoles={["staff"]}>
-              <div>Restaurant Info - Sẽ được triển khai sau</div>
+              <RestaurantInfo />
             </RoleBasedRoute>
           }
         />
@@ -151,7 +155,7 @@ function App() {
           path="/staff/reservations"
           element={
             <RoleBasedRoute allowedRoles={["staff"]}>
-              <div>Reservations Management - Sẽ được triển khai sau</div>
+              <Reservation />
             </RoleBasedRoute>
           }
         />
@@ -175,7 +179,7 @@ function App() {
           path="/staff/tables"
           element={
             <RoleBasedRoute allowedRoles={["staff"]}>
-              <div>Table Management - Sẽ được triển khai sau</div>
+              <TableMana />
             </RoleBasedRoute>
           }
         />
@@ -183,7 +187,7 @@ function App() {
           path="/staff/menu"
           element={
             <RoleBasedRoute allowedRoles={["staff"]}>
-              <div>Menu Management - Sẽ được triển khai sau</div>
+              <StaffMenu />
             </RoleBasedRoute>
           }
         />

@@ -18,10 +18,10 @@ const assignStaff = async (req, res) => {
 // Get all staff for a restaurant
 const getRestaurantStaff = async (req, res) => {
   try {
-    const { restaurantId } = req.params;
+    const { userId } = req.params;
 
     const result = await restaurantStaffService.getRestaurantStaff(
-      restaurantId
+      userId
     );
 
     if (result.status === "Success") {

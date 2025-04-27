@@ -114,8 +114,78 @@ const signIn = async (req, res) => {
   }
 };
 
+const getAllUsers = async (req, res) => {
+  try {
+    const response = await userService.getAllUsers();
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+    console.log(error.message);
+  }
+};
+
+const detailUser = async (req, res) => {
+  try {
+    const userid = req.params.id;
+    if (!userid) {
+      return res.status(400).json({
+        message: 'this Id is required'
+      })
+    }
+    const response = await userService.detailUser(userid);
+    return res.status(200).json(response)
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const userid = req.params.id;
+
+    if (!userid) {
+      return res.status(400).json({ message: 'this Id is required' });
+    }
+
+    const user = await userService.detailUser(userid);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await User.deleteOne({ user_id: userid });
+
+    await userService.deleteUser(userid);
+
+    return res.status(200).json({ message: 'User and associated role deleted successfully' });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const userid = req.params.id;
+    const datauser = req.body;
+
+    if (!userid) {
+      return res.status(400).json({ message: 'this Id is required' });
+    }
+
+    const response = await userService.updateUser(userid, datauser);
+    return res.status(200).json(response)
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+
+}
+
+
 module.exports = {
   createUser,
   signIn,
   createCustomerUser,
+  getAllUsers,
+  detailUser,
+  deleteUser,
+  updateUser,
 };

@@ -7,15 +7,16 @@ const {
   getPromotionById,
   updatePromotion,
   deletePromotion,
+  getRestaurantActivePromotions,
 } = require("../controllers/promotionController");
-const { authMiddleware, isStaff } = require("../middlewares/middleware");
+const { authMiddleware, isStaff , isAdmin} = require("../middlewares/middleware");
 
 /**
  * @route POST /api/promotion
  * @desc Create a new promotion
  * @access Private (Staff only)
  */
-router.post("/", authMiddleware("access"), isStaff, createPromotion);
+router.post("/", authMiddleware("access"), isAdmin, createPromotion);
 
 /**
  * @route GET /api/promotion/restaurant/:restaurantId
@@ -43,17 +44,22 @@ router.get("/:promotionId", getPromotionById);
  * @desc Update a promotion
  * @access Private (Staff only)
  */
-router.put("/:promotionId", authMiddleware("access"), isStaff, updatePromotion);
+router.put("/:promotionId", authMiddleware("access"), isAdmin, updatePromotion);
+
+
+router.get("/restaurant/:restaurantId/active", getRestaurantActivePromotions);
 
 /**
  * @route DELETE /api/promotion/:promotionId
  * @desc Delete a promotion
  * @access Private (Staff only)
  */
+
+
 router.delete(
   "/:promotionId",
   authMiddleware("access"),
-  isStaff,
+  isAdmin,
   deletePromotion
 );
 

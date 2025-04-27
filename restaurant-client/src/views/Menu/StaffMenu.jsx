@@ -14,6 +14,8 @@ import {
   Spin,
   Typography,
   Divider,
+  Tag,
+  Image,
 } from "antd";
 import { Link } from "react-router-dom";
 import {
@@ -24,11 +26,12 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   MenuFoldOutlined,
-  ShopOutlined,
   MenuOutlined,
   DollarOutlined,
   AppstoreOutlined,
   TagOutlined,
+  EyeOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 
 // Material-UI components for breadcrumbs
@@ -46,7 +49,7 @@ import { NavigateNext } from "@mui/icons-material";
 import axiosInstance from "../../contexts/AxiosCustom";
 
 // Import CSS
-import "../../style/Menu/AdminMenu.scss";
+import "../../style/Staff/StaffMenu.scss";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -54,43 +57,43 @@ const { TabPane } = Tabs;
 const { Meta } = Card;
 const { Title, Text } = Typography;
 
-const AdminMenu = () => {
+const StaffMenu = () => {
   // States
   const [loading, setLoading] = useState(false);
-  const [restaurants, setRestaurants] = useState([]);
   const [menus, setMenus] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [selectedRestaurant, setSelectedRestaurant] = useState("");
   const [selectedMenu, setSelectedMenu] = useState(null);
   const [activeTab, setActiveTab] = useState("1");
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [restaurant, setRestaurant] = useState(null);
+  const [availableCategories, setAvailableCategories] = useState([]);
 
   // Form states
-  const [menuForm] = Form.useForm();
   const [itemForm] = Form.useForm();
 
   // Dialogs
-  const [menuModalVisible, setMenuModalVisible] = useState(false);
   const [itemModalVisible, setItemModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewItem, setPreviewItem] = useState(null);
 
-  // First load - fetch restaurants
+  // Lấy thông tin staff từ localStorage
+  const staff = JSON.parse(localStorage.getItem("user") || "{}");
+
+  // Khi component mount, lấy thông tin nhà hàng của staff
   useEffect(() => {
-    fetchRestaurants();
+    fetchStaffRestaurant();
   }, []);
 
-  // When restaurant is selected, fetch its menus
+  // Khi có restaurant, lấy tất cả menu của restaurant đó
   useEffect(() => {
-    if (selectedRestaurant) {
-      fetchRestaurantMenus(selectedRestaurant);
-    } else {
-      setMenus([]);
-      setSelectedMenu(null);
-      setMenuItems([]);
+    if (restaurant) {
+      fetchRestaurantMenus(restaurant._id);
     }
-  }, [selectedRestaurant]);
+  }, [restaurant]);
 
-  // When menu is selected, fetch its items
+  // Khi menu được chọn, lấy danh sách món ăn trong menu đó
   useEffect(() => {
     if (selectedMenu) {
       fetchMenuItems(selectedMenu._id);
@@ -99,39 +102,46 @@ const AdminMenu = () => {
     }
   }, [selectedMenu]);
 
-  const fetchRestaurants = async () => {
+  // Fetch thông tin nhà hàng của staff
+  const fetchStaffRestaurant = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/restaurant");
+      const response = await axiosInstance.get(
+        `/api/staff/restaurant/${staff._id}`
+      );
 
-      if (response.data.status === "Success") {
-        setRestaurants(response.data.data || []);
+      if (
+        response.data.status === "Success" &&
+        response.data.data?.restaurant
+      ) {
+        setRestaurant(response.data.data.restaurant);
       } else {
-        message.error("Không thể tải danh sách nhà hàng");
+        message.error("Bạn chưa được gán cho nhà hàng nào");
       }
     } catch (error) {
-      console.error("Error fetching restaurants:", error);
-      message.error(
-        "Không thể tải danh sách nhà hàng: " +
-          (error.response?.data?.message || error.message)
-      );
+      console.error("Error fetching staff restaurant:", error);
+      message.error("Không thể lấy thông tin nhà hàng");
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch menu của nhà hàng
   const fetchRestaurantMenus = async (restaurantId) => {
     try {
       setLoading(true);
-      // Update to match the API route defined in menuRoute.js
       const response = await axiosInstance.get(
-        `/menu/restaurant/${restaurantId}`
+        `/api/menu/restaurant/${restaurantId}`
       );
-  
+
       if (response.data.status === "Success") {
-        setMenus(response.data.data || []);
-        setSelectedMenu(null);
-        setMenuItems([]);
+        const menuData = response.data.data || [];
+        setMenus(menuData);
+
+        // Nếu có menu, tự động chọn menu đầu tiên
+        if (menuData.length > 0 && !selectedMenu) {
+          setSelectedMenu(menuData[0]);
+        }
       } else {
         message.error("Không thể tải danh sách menu");
       }
@@ -145,13 +155,24 @@ const AdminMenu = () => {
       setLoading(false);
     }
   };
+
+  // Fetch món ăn trong menu
   const fetchMenuItems = async (menuId) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/menu/${menuId}/items`);
+      const response = await axiosInstance.get(`/api/menu/${menuId}/items`);
 
       if (response.data.status === "Success") {
-        setMenuItems(response.data.data || []);
+        const items = response.data.data || [];
+        setMenuItems(items);
+
+        // Trích xuất danh sách danh mục
+        const categories = [
+          ...new Set(
+            items.filter((item) => item.category).map((item) => item.category)
+          ),
+        ];
+        setAvailableCategories(categories);
       } else {
         message.error("Không thể tải danh sách món ăn");
       }
@@ -171,144 +192,11 @@ const AdminMenu = () => {
     setActiveTab(key);
   };
 
-  // Restaurant selection handler
-  const handleRestaurantChange = (value) => {
-    setSelectedRestaurant(value);
-  };
-
   // Menu selection handler
   const handleSelectMenu = (menu) => {
     setSelectedMenu(menu);
     setActiveTab("2"); // Switch to menu items tab when selecting a menu
-  };
-
-  // ===== MENU MODAL HANDLERS =====
-  const openMenuModal = (menu = null) => {
-    if (!selectedRestaurant && !menu) {
-      message.warning("Vui lòng chọn nhà hàng trước");
-      return;
-    }
-
-    setIsEditMode(!!menu);
-
-    if (menu) {
-      // Edit mode
-      menuForm.setFieldsValue({
-        name: menu.name,
-        description: menu.description || "",
-        restaurant: menu.restaurant,
-      });
-    } else {
-      // Create mode
-      menuForm.setFieldsValue({
-        name: "",
-        description: "",
-        restaurant: selectedRestaurant,
-      });
-    }
-
-    setMenuModalVisible(true);
-  };
-
-  const handleSaveMenu = async (values) => {
-    try {
-      setLoading(true);
-
-      if (isEditMode) {
-        // Update existing menu
-        const response = await axiosInstance.put(
-          `/menu/${selectedMenu._id}`,
-          values,
-          {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-          }
-        );
-
-        if (response.data.status === "Success") {
-          message.success("Cập nhật menu thành công!");
-
-          // Update the menu in the state
-          setMenus(
-            menus.map((menu) =>
-              menu._id === selectedMenu._id ? response.data.data : menu
-            )
-          );
-          setSelectedMenu(response.data.data);
-        } else {
-          message.error("Không thể cập nhật menu: " + response.data.message);
-        }
-      } else {
-        // Create new menu
-        const token = localStorage.getItem("accessToken");
-        const response = await axiosInstance.post("/menu", values,
-          {
-            headers: {
-                      Authorization: `Bearer ${token}`, 
-            },
-          }
-        );
-
-        if (response.data.status === "Success") {
-          message.success("Tạo menu mới thành công!");
-
-          // Add the new menu to the state
-          const newMenu = response.data.data;
-          setMenus([...menus, newMenu]);
-        } else {
-          message.error("Không thể tạo menu mới: " + response.data.message);
-        }
-      }
-
-      setMenuModalVisible(false);
-    } catch (error) {
-      console.error("Error saving menu:", error);
-      message.error("Lỗi: " + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteMenu = async (menuId) => {
-    if (
-      !window.confirm(
-        "Bạn có chắc chắn muốn xóa menu này? Tất cả các món ăn trong menu cũng sẽ bị xóa."
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axiosInstance.delete(`/menu/${menuId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-
-      if (response.data.status === "Success") {
-        message.success("Xóa menu thành công!");
-
-        // Remove the menu from the state
-        setMenus(menus.filter((menu) => menu._id !== menuId));
-
-        // If the deleted menu was selected, clear selection
-        if (selectedMenu && selectedMenu._id === menuId) {
-          setSelectedMenu(null);
-          setMenuItems([]);
-        }
-      } else {
-        message.error("Không thể xóa menu: " + response.data.message);
-      }
-    } catch (error) {
-      console.error("Error deleting menu:", error);
-      message.error("Lỗi: " + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
-    }
+    setCategoryFilter(""); // Reset category filter
   };
 
   // ===== MENU ITEM MODAL HANDLERS =====
@@ -346,6 +234,13 @@ const AdminMenu = () => {
     setItemModalVisible(true);
   };
 
+  // Open preview modal
+  const openPreviewModal = (item) => {
+    setPreviewItem(item);
+    setPreviewVisible(true);
+  };
+
+  // Handle item form submit
   const handleSaveItem = async (values) => {
     try {
       setLoading(true);
@@ -353,13 +248,8 @@ const AdminMenu = () => {
       if (isEditMode) {
         // Update existing item
         const response = await axiosInstance.put(
-          `/menu/item/${values._id}`,
-          values,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
+          `/api/menu/item/${values._id}`,
+          values
         );
 
         if (response.data.status === "Success") {
@@ -371,24 +261,40 @@ const AdminMenu = () => {
               item._id === values._id ? response.data.data : item
             )
           );
+
+          // Update categories
+          const updatedItems = menuItems.map((item) =>
+            item._id === values._id ? response.data.data : item
+          );
+          const categories = [
+            ...new Set(
+              updatedItems
+                .filter((item) => item.category)
+                .map((item) => item.category)
+            ),
+          ];
+          setAvailableCategories(categories);
         } else {
           message.error("Không thể cập nhật món ăn: " + response.data.message);
         }
       } else {
         // Create new item
-        const response = await axiosInstance.post("/menu/item", values,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
+        const response = await axiosInstance.post("/api/menu/item", values);
 
         if (response.data.status === "Success") {
           message.success("Thêm món ăn mới thành công!");
 
           // Add the new item to the state
-          setMenuItems([...menuItems, response.data.data]);
+          const newItem = response.data.data;
+          setMenuItems([...menuItems, newItem]);
+
+          // Update categories if there's a new category
+          if (
+            newItem.category &&
+            !availableCategories.includes(newItem.category)
+          ) {
+            setAvailableCategories([...availableCategories, newItem.category]);
+          }
         } else {
           message.error("Không thể thêm món ăn mới: " + response.data.message);
         }
@@ -403,6 +309,7 @@ const AdminMenu = () => {
     }
   };
 
+  // Handle delete item
   const handleDeleteItem = async (itemId) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa món ăn này?")) {
       return;
@@ -410,19 +317,24 @@ const AdminMenu = () => {
 
     try {
       setLoading(true);
-      const response = await axiosInstance.delete(`/menu/item/${itemId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      const response = await axiosInstance.delete(`/api/menu/item/${itemId}`);
 
       if (response.data.status === "Success") {
         message.success("Xóa món ăn thành công!");
 
         // Remove the item from the state
-        setMenuItems(menuItems.filter((item) => item._id !== itemId));
+        const updatedItems = menuItems.filter((item) => item._id !== itemId);
+        setMenuItems(updatedItems);
+
+        // Update categories
+        const categories = [
+          ...new Set(
+            updatedItems
+              .filter((item) => item.category)
+              .map((item) => item.category)
+          ),
+        ];
+        setAvailableCategories(categories);
       } else {
         message.error("Không thể xóa món ăn: " + response.data.message);
       }
@@ -434,24 +346,29 @@ const AdminMenu = () => {
     }
   };
 
-  // Filter menu items based on search term
-  const filteredMenuItems = menuItems.filter(
-    (item) =>
+  // Filter menu items based on search term and category filter
+  const filteredMenuItems = menuItems.filter((item) => {
+    const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.category &&
         item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.description &&
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesCategory =
+      categoryFilter === "" || item.category === categoryFilter;
+
+    return matchesSearch && matchesCategory;
+  });
 
   // Menu cards render
   const renderMenuCards = () => {
     if (loading && menus.length === 0) return <Spin size="large" />;
 
-    if (!selectedRestaurant) {
+    if (!restaurant) {
       return (
         <div style={{ textAlign: "center", padding: "20px" }}>
-          <Text type="secondary">Vui lòng chọn nhà hàng để xem menu</Text>
+          <Text type="secondary">Bạn chưa được gán cho nhà hàng nào</Text>
         </div>
       );
     }
@@ -461,12 +378,8 @@ const AdminMenu = () => {
         <div style={{ textAlign: "center", padding: "20px" }}>
           <Text type="secondary">Chưa có menu nào cho nhà hàng này</Text>
           <div style={{ marginTop: "10px" }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => openMenuModal()}
-            >
-              Tạo Menu Mới
+            <Button type="primary" disabled icon={<PlusOutlined />}>
+              Tạo Menu Mới (Liên hệ Admin)
             </Button>
           </div>
         </div>
@@ -485,30 +398,6 @@ const AdminMenu = () => {
                 : "menu-card"
             }
             onClick={() => handleSelectMenu(menu)}
-            actions={[
-              <Button
-                type="text"
-                icon={<EditOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedMenu(menu);
-                  openMenuModal(menu);
-                }}
-              >
-                Sửa
-              </Button>,
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteMenu(menu._id);
-                }}
-              >
-                Xóa
-              </Button>,
-            ]}
           >
             <Meta
               avatar={
@@ -540,7 +429,9 @@ const AdminMenu = () => {
                 height: 40,
                 objectFit: "cover",
                 borderRadius: "4px",
+                cursor: "pointer",
               }}
+              onClick={() => openPreviewModal(record)}
             />
           ) : (
             <AppstoreOutlined />
@@ -555,6 +446,7 @@ const AdminMenu = () => {
       title: "Mô tả",
       dataIndex: "description",
       key: "description",
+      ellipsis: true,
       render: (text) => text || "Không có mô tả",
     },
     {
@@ -567,11 +459,14 @@ const AdminMenu = () => {
           <Text>{category || "Không có danh mục"}</Text>
         </Space>
       ),
+      filters: availableCategories.map((cat) => ({ text: cat, value: cat })),
+      onFilter: (value, record) => record.category === value,
     },
     {
       title: "Giá",
       dataIndex: "price",
       key: "price",
+      sorter: (a, b) => a.price - b.price,
       render: (price) => (
         <Space>
           <DollarOutlined />
@@ -611,7 +506,7 @@ const AdminMenu = () => {
       <Paper
         elevation={3}
         style={{ padding: 24, borderRadius: "8px" }}
-        className="menu-management"
+        className="staff-menu-management"
       >
         {/* Breadcrumbs */}
         <Breadcrumbs
@@ -621,7 +516,7 @@ const AdminMenu = () => {
         >
           <MuiLink
             component={Link}
-            to="/admin/dashboard"
+            to="/staff/dashboard"
             color="inherit"
             underline="hover"
           >
@@ -641,42 +536,19 @@ const AdminMenu = () => {
           }}
         >
           <MuiTypography variant="h4" component="h1" gutterBottom>
-            Quản lý Menu Nhà Hàng
+            Quản lý Menu - {restaurant?.name || "Đang tải..."}
           </MuiTypography>
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button
               type="default"
               icon={<ReloadOutlined />}
-              onClick={fetchRestaurants}
+              onClick={() => restaurant && fetchRestaurantMenus(restaurant._id)}
               loading={loading}
             >
               Làm mới
             </Button>
           </Box>
         </Box>
-
-        {/* Restaurant Selector */}
-        <div style={{ marginBottom: 20 }}>
-          <Select
-            placeholder="Chọn nhà hàng"
-            style={{ width: "100%" }}
-            value={selectedRestaurant || undefined}
-            onChange={handleRestaurantChange}
-            loading={loading}
-            showSearch
-            optionFilterProp="children"
-          >
-            <Option value="">-- Chọn nhà hàng --</Option>
-            {restaurants.map((restaurant) => (
-              <Option key={restaurant._id} value={restaurant._id}>
-                <Space>
-                  <ShopOutlined />
-                  {restaurant.name}
-                </Space>
-              </Option>
-            ))}
-          </Select>
-        </div>
 
         {/* Tabs */}
         <Tabs
@@ -685,22 +557,6 @@ const AdminMenu = () => {
           className="menu-tabs"
         >
           <TabPane tab="Danh sách Menu" key="1">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginBottom: 16,
-              }}
-            >
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => openMenuModal()}
-                disabled={!selectedRestaurant}
-              >
-                Thêm Menu
-              </Button>
-            </div>
             {renderMenuCards()}
           </TabPane>
 
@@ -722,14 +578,35 @@ const AdminMenu = () => {
                       justifyContent: "space-between",
                     }}
                   >
-                    <Input.Search
-                      placeholder="Tìm kiếm món ăn..."
-                      allowClear
-                      style={{ width: 300 }}
-                      onSearch={setSearchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      prefix={<SearchOutlined />}
-                    />
+                    <Space>
+                      <Input.Search
+                        placeholder="Tìm kiếm món ăn..."
+                        allowClear
+                        style={{ width: 300 }}
+                        onSearch={setSearchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        prefix={<SearchOutlined />}
+                      />
+
+                      {availableCategories.length > 0 && (
+                        <Select
+                          placeholder="Lọc theo danh mục"
+                          style={{ width: 180 }}
+                          value={categoryFilter}
+                          onChange={setCategoryFilter}
+                          allowClear
+                          onClear={() => setCategoryFilter("")}
+                        >
+                          <Option value="">Tất cả danh mục</Option>
+                          {availableCategories.map((category) => (
+                            <Option key={category} value={category}>
+                              {category}
+                            </Option>
+                          ))}
+                        </Select>
+                      )}
+                    </Space>
+
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
@@ -747,9 +624,10 @@ const AdminMenu = () => {
                   pagination={{ pageSize: 10 }}
                   loading={loading}
                   locale={{
-                    emptyText: searchTerm
-                      ? "Không tìm thấy món ăn nào phù hợp"
-                      : "Chưa có món ăn nào trong menu này",
+                    emptyText:
+                      searchTerm || categoryFilter
+                        ? "Không tìm thấy món ăn nào phù hợp"
+                        : "Chưa có món ăn nào trong menu này",
                   }}
                   bordered
                 />
@@ -757,56 +635,6 @@ const AdminMenu = () => {
             )}
           </TabPane>
         </Tabs>
-
-        {/* Menu Modal */}
-        <Modal
-          title={isEditMode ? "Chỉnh sửa Menu" : "Thêm Menu mới"}
-          visible={menuModalVisible}
-          onCancel={() => setMenuModalVisible(false)}
-          footer={null}
-          destroyOnClose
-        >
-          <Form form={menuForm} layout="vertical" onFinish={handleSaveMenu}>
-            <Form.Item
-              name="restaurant"
-              label="Nhà hàng"
-              rules={[{ required: true, message: "Vui lòng chọn nhà hàng" }]}
-            >
-              <Select placeholder="Chọn nhà hàng" disabled={isEditMode}>
-                {restaurants.map((restaurant) => (
-                  <Option key={restaurant._id} value={restaurant._id}>
-                    {restaurant.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="name"
-              label="Tên menu"
-              rules={[{ required: true, message: "Vui lòng nhập tên menu" }]}
-            >
-              <Input placeholder="Nhập tên menu" prefix={<MenuOutlined />} />
-            </Form.Item>
-
-            <Form.Item name="description" label="Mô tả">
-              <TextArea rows={3} placeholder="Nhập mô tả về menu" />
-            </Form.Item>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 24,
-              }}
-            >
-              <Button onClick={() => setMenuModalVisible(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                {isEditMode ? "Cập nhật" : "Tạo mới"}
-              </Button>
-            </div>
-          </Form>
-        </Modal>
 
         {/* Menu Item Modal */}
         <Modal
@@ -855,7 +683,47 @@ const AdminMenu = () => {
                 label="Danh mục"
                 style={{ width: "48%" }}
               >
-                <Input placeholder="Nhập danh mục" prefix={<TagOutlined />} />
+                <Select
+                  placeholder="Chọn danh mục"
+                  allowClear
+                  showSearch
+                  dropdownRender={(menu) => (
+                    <div>
+                      {menu}
+                      <Divider style={{ margin: "4px 0" }} />
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "nowrap",
+                          padding: 8,
+                        }}
+                      >
+                        <Input
+                          style={{ flex: "auto" }}
+                          placeholder="Nhập danh mục mới"
+                          onPressEnter={(e) => {
+                            e.preventDefault();
+                            const value = e.target.value.trim();
+                            if (value && !availableCategories.includes(value)) {
+                              setAvailableCategories([
+                                ...availableCategories,
+                                value,
+                              ]);
+                              itemForm.setFieldsValue({ category: value });
+                            }
+                            e.target.value = "";
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                >
+                  {availableCategories.map((category) => (
+                    <Option key={category} value={category}>
+                      {category}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
 
               <Form.Item
@@ -898,9 +766,70 @@ const AdminMenu = () => {
             </div>
           </Form>
         </Modal>
+
+        {/* Preview Modal */}
+        <Modal
+          visible={previewVisible}
+          title={previewItem?.name || "Xem chi tiết món ăn"}
+          footer={null}
+          onCancel={() => setPreviewVisible(false)}
+          width={700}
+        >
+          {previewItem && (
+            <div className="food-item-preview">
+              {previewItem.imageUrl && (
+                <div className="preview-image-container">
+                  <Image
+                    src={previewItem.imageUrl}
+                    alt={previewItem.name}
+                    style={{ maxWidth: "100%" }}
+                  />
+                </div>
+              )}
+              <div className="preview-details">
+                <Title level={4}>{previewItem.name}</Title>
+
+                {previewItem.category && (
+                  <Tag color="blue">{previewItem.category}</Tag>
+                )}
+
+                <div className="preview-price">
+                  <Title level={5}>
+                    Giá: {previewItem.price?.toLocaleString()} VNĐ
+                  </Title>
+                </div>
+
+                {previewItem.description && (
+                  <div className="preview-description">
+                    <Title level={5}>Mô tả:</Title>
+                    <Text>{previewItem.description}</Text>
+                  </div>
+                )}
+
+                <div className="preview-actions" style={{ marginTop: 24 }}>
+                  <Space>
+                    <Button
+                      type="primary"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        setPreviewVisible(false);
+                        openItemModal(previewItem);
+                      }}
+                    >
+                      Chỉnh sửa
+                    </Button>
+                    <Button onClick={() => setPreviewVisible(false)}>
+                      Đóng
+                    </Button>
+                  </Space>
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
       </Paper>
     </Container>
   );
 };
 
-export default AdminMenu;
+export default StaffMenu;

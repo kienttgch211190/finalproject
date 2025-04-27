@@ -221,6 +221,31 @@ const deletePromotion = async (promotionId) => {
   }
 };
 
+// Get active promotions for a specific restaurant
+const getRestaurantActivePromotions = async (restaurantId) => {
+  try {
+    // Check if restaurant exists
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return { status: "Error", message: "Restaurant not found" };
+    }
+
+    const currentDate = new Date();
+
+    // Query for active promotions for this restaurant
+    const promotions = await Promotion.find({
+      restaurant: restaurantId,
+      startDate: { $lte: currentDate },
+      endDate: { $gte: currentDate },
+      isActive: true
+    }).sort({ discountPercent: -1 });
+
+    return { status: "Success", data: promotions };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
 module.exports = {
   createPromotion,
   getRestaurantPromotions,
@@ -228,4 +253,5 @@ module.exports = {
   getPromotionById,
   updatePromotion,
   deletePromotion,
+  getRestaurantActivePromotions,
 };

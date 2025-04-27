@@ -79,11 +79,17 @@ const ReservationMana = () => {
     }
   }, [form.getFieldValue("restaurant")]);
 
-  // Fetch reservations
   const fetchReservations = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/api/reservation");
+      const token = localStorage.getItem("accessToken");
+      
+      const response = await axiosInstance.get("/reservation", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
       if (response.data.status === "Success") {
         setReservations(response.data.data || []);
       } else {
@@ -100,7 +106,15 @@ const ReservationMana = () => {
   // Fetch restaurants
   const fetchRestaurants = async () => {
     try {
-      const response = await axiosInstance.get("/api/restaurant");
+      const token = localStorage.getItem("accessToken");
+
+      const response = await axiosInstance.get("/restaurant",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       if (response.data.status === "Success") {
         setRestaurants(response.data.data || []);
       }
@@ -115,8 +129,9 @@ const ReservationMana = () => {
 
     try {
       const response = await axiosInstance.get(
-        `/api/table/byRestaurant/${restaurantId}`
+        `/table/restaurant/${restaurantId}`
       );
+      console.log("table",response.data);
       if (response.data.status === "Success") {
         setTables(response.data.data || []);
       }
@@ -128,9 +143,16 @@ const ReservationMana = () => {
   // Fetch users
   const fetchUsers = async () => {
     try {
-      const response = await axiosInstance.get("/api/user");
+      const response = await axiosInstance.get("/user/get-all-users", 
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
       if (response.data.status === "Success") {
-        setUsers(response.data.data || []);
+        const customers = (response.data.data || []).filter(user => user.role === "customer");
+        setUsers(customers);
       }
     } catch (error) {
       console.error("Lỗi khi lấy danh sách người dùng:", error);
@@ -150,8 +172,13 @@ const ReservationMana = () => {
       if (selectedReservation) {
         // Edit mode
         const response = await axiosInstance.put(
-          `/api/reservation/${selectedReservation._id}`,
-          formattedValues
+          `/reservation/update/${selectedReservation._id}`,
+          formattedValues,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
         );
         if (response.data.status === "Success") {
           message.success("Cập nhật đặt bàn thành công!");
@@ -163,8 +190,13 @@ const ReservationMana = () => {
       } else {
         // Create mode
         const response = await axiosInstance.post(
-          "/api/reservation",
-          formattedValues
+          "/reservation/create",
+          formattedValues,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
         );
         if (response.data.status === "Success") {
           message.success("Tạo đặt bàn thành công!");
@@ -186,9 +218,14 @@ const ReservationMana = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.put(
-        `/api/reservation/status/${id}`,
+        `reservation/status/${id}`,
         {
           status: newStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
       );
 
@@ -210,19 +247,39 @@ const ReservationMana = () => {
   };
 
   // Handle delete
-  const handleDelete = async (id) => {
-    try {
-      const response = await axiosInstance.delete(`/api/reservation/${id}`);
-      if (response.data.status === "Success") {
-        message.success("Xóa đặt bàn thành công");
-        setReservations(reservations.filter((res) => res._id !== id));
-      } else {
-        message.error("Không thể xóa đặt bàn");
+  // Handle delete
+const handleDelete = async (id) => {
+  // Add confirmation dialog
+  if (!window.confirm("Bạn có chắc chắn muốn xóa đặt bàn này? Dữ liệu đã xóa không thể khôi phục.")) {
+    return;
+  }
+  
+  try {
+    setLoading(true); // Set loading state while deleting
+    const token = localStorage.getItem("accessToken");
+    
+    const response = await axiosInstance.delete(`/reservation/delete/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    } catch (error) {
-      message.error("Có lỗi xảy ra khi xóa đặt bàn");
+    });
+    
+    if (response.data.status === "Success") {
+      message.success("Xóa đặt bàn thành công");
+      // Update local state to remove the deleted reservation
+      setReservations(prevReservations => 
+        prevReservations.filter((res) => res._id !== id)
+      );
+    } else {
+      message.error("Không thể xóa đặt bàn: " + (response.data.message || "Unknown error"));
     }
-  };
+  } catch (error) {
+    console.error("Error deleting reservation:", error);
+    message.error("Có lỗi xảy ra khi xóa đặt bàn: " + (error.response?.data?.message || error.message));
+  } finally {
+    setLoading(false); // Reset loading state regardless of outcome
+  }
+};
 
   // Open edit modal
   const openEditModal = (reservation) => {
@@ -515,7 +572,7 @@ const ReservationMana = () => {
               >
                 {tables.map((table) => (
                   <Option key={table._id} value={table._id}>
-                    {table.name} (Sức chứa: {table.capacity})
+                    {table.name} ({table.tableNumber})
                   </Option>
                 ))}
               </Select>

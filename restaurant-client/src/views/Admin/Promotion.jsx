@@ -21,9 +21,10 @@ import {
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 
-// Thêm breadcrumbs
+// Material-UI components for breadcrumbs
 import {
   Box,
   Typography,
@@ -34,102 +35,265 @@ import {
 } from "@mui/material";
 import { NavigateNext } from "@mui/icons-material";
 
+// Import axios instance
+import axiosInstance from "../../contexts/AxiosCustom";
+
 const PromotionPage = () => {
-  // State chính
+  // State
   const [promotions, setPromotions] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [form] = Form.useForm();
 
-  // Load data từ localStorage
+  // Fetch promotions on component mount
   useEffect(() => {
-    const savedData = JSON.parse(localStorage.getItem("promotions")) || [];
-    setPromotions(savedData);
+    fetchPromotions();
+    fetchRestaurants();
   }, []);
 
-  // Tự động cập nhật trạng thái
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPromotions((prev) =>
-        prev.map((p) => ({
-          ...p,
-          status: moment().isAfter(moment(p.endDate)) ? "expired" : "active",
-        }))
-      );
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Xử lý CRUD
-  const handleSubmit = (values) => {
-    const newPromo = {
-      ...values,
-      id: selectedPromotion?.id || Date.now(),
-      applicableHours: values.applicableHours?.map((t) => t.format("HH:mm")),
-    };
-
-    setPromotions((prev) =>
-      selectedPromotion
-        ? prev.map((p) => (p.id === newPromo.id ? newPromo : p))
-        : [...prev, newPromo]
-    );
-
-    message.success(
-      selectedPromotion ? "Cập nhật thành công!" : "Tạo mới thành công!"
-    );
-    setIsModalOpen(false);
-    form.resetFields();
+  // Fetch all promotions
+  const fetchPromotions = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
+      
+      // Get all restaurants first to fetch their promotions
+      const restaurantsResponse = await axiosInstance.get("/restaurant", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (restaurantsResponse.data.status === "Success") {
+        const restaurants = restaurantsResponse.data.data || [];
+        
+        // For each restaurant, fetch its promotions
+        const promotionsPromises = restaurants.map(restaurant => 
+          axiosInstance.get(`/promotion/restaurant/${restaurant._id}?includeExpired=true`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+        );
+        
+        const promotionsResponses = await Promise.all(promotionsPromises);
+        
+        // Combine all promotions into a single array
+        let allPromotions = [];
+        promotionsResponses.forEach((response, index) => {
+          if (response.data.status === "Success") {
+            // Add restaurant information to each promotion
+            const promotionsWithRestaurant = (response.data.data || []).map(promo => ({
+              ...promo,
+              restaurantName: restaurants[index].name
+            }));
+            allPromotions = [...allPromotions, ...promotionsWithRestaurant];
+          }
+        });
+        
+        setPromotions(allPromotions);
+      } else {
+        message.error("Không thể tải danh sách nhà hàng");
+      }
+    } catch (error) {
+      console.error("Error fetching promotions:", error);
+      message.error("Không thể tải danh sách khuyến mãi: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id) => {
-    setPromotions((prev) => prev.filter((p) => p.id !== id));
-    message.success("Xóa thành công!");
+  // Fetch restaurants
+  const fetchRestaurants = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await axiosInstance.get("/restaurant", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.status === "Success") {
+        setRestaurants(response.data.data || []);
+      } else {
+        message.error("Không thể tải danh sách nhà hàng");
+      }
+    } catch (error) {
+      console.error("Error fetching restaurants:", error);
+    }
   };
 
-  // Columns cho bảng
+  // Handle form submission
+  const handleSubmit = async (values) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
+      
+      // Format values
+      const formattedData = {
+        restaurant: values.restaurant,
+        title: values.name,
+        description: values.description || "",
+        discountPercent: values.type === "percentage" ? values.value : values.value,
+        startDate: values.startDate.format("YYYY-MM-DD"),
+        endDate: values.endDate.format("YYYY-MM-DD"),
+        isActive: true
+      };
+      
+      if (selectedPromotion) {
+        // Update promotion
+        const response = await axiosInstance.put(
+          `/promotion/${selectedPromotion._id}`,
+          formattedData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        
+        if (response.data.status === "Success") {
+          message.success("Cập nhật khuyến mãi thành công!");
+          fetchPromotions(); // Refresh data
+          setIsModalOpen(false);
+        } else {
+          message.error("Không thể cập nhật khuyến mãi: " + response.data.message);
+        }
+      } else {
+        // Create promotion
+        const response = await axiosInstance.post(
+          "/promotion",
+          formattedData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        
+        if (response.data.status === "Success") {
+          message.success("Tạo khuyến mãi mới thành công!");
+          fetchPromotions(); // Refresh data
+          setIsModalOpen(false);
+        } else {
+          message.error("Không thể tạo khuyến mãi mới: " + response.data.message);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving promotion:", error);
+      message.error("Lỗi: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa khuyến mãi này?")) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
+      
+      const response = await axiosInstance.delete(`/promotion/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.status === "Success") {
+        message.success("Xóa khuyến mãi thành công!");
+        setPromotions(promotions.filter(promo => promo._id !== id));
+      } else {
+        message.error("Không thể xóa khuyến mãi: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting promotion:", error);
+      message.error("Lỗi: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check if promotion is active
+  const isPromotionActive = (promotion) => {
+    const currentDate = new Date();
+    const startDate = new Date(promotion.startDate);
+    const endDate = new Date(promotion.endDate);
+    
+    return promotion.isActive && startDate <= currentDate && endDate >= currentDate;
+  };
+
+  // Table columns
   const columns = [
     {
-      title: "Tên KM",
-      dataIndex: "name",
-      filteredValue: [searchTerm],
-      onFilter: (value, record) =>
-        record.name.toLowerCase().includes(value.toLowerCase()) ||
-        (record.code &&
-          record.code.toLowerCase().includes(value.toLowerCase())),
+      title: "Nhà hàng",
+      dataIndex: "restaurantName",
+      key: "restaurantName",
+      render: (text, record) => 
+        record.restaurant?.name || text || "Không có thông tin",
     },
     {
-      title: "Giá trị",
-      render: (_, record) =>
-        record.type === "percentage"
-          ? `${record.value}%`
-          : `${record.value.toLocaleString()}đ`,
+      title: "Tên Khuyến mãi",
+      dataIndex: "title",
+      key: "title",
+      filteredValue: searchTerm ? [searchTerm] : null,
+      onFilter: (value, record) =>
+        (record.title?.toLowerCase() || "").includes(value.toLowerCase()) ||
+        (record.restaurantName?.toLowerCase() || "").includes(value.toLowerCase()),
+    },
+    {
+      title: "Giảm giá",
+      dataIndex: "discountPercent",
+      key: "discountPercent",
+      render: (value) => `${value}%`,
+    },
+    {
+      title: "Thời gian",
+      key: "period",
+      render: (_, record) => (
+        <Space direction="vertical" size={0}>
+          <small>
+            Từ: {moment(record.startDate).format("DD/MM/YYYY")}
+          </small>
+          <small>
+            Đến: {moment(record.endDate).format("DD/MM/YYYY")}
+          </small>
+        </Space>
+      ),
     },
     {
       title: "Trạng thái",
+      key: "status",
       render: (_, record) => (
-        <Tag color={record.status === "active" ? "green" : "red"}>
-          {record.status.toUpperCase()}
+        <Tag color={isPromotionActive(record) ? "green" : "red"}>
+          {isPromotionActive(record) ? "ĐANG HOẠT ĐỘNG" : "HẾT HẠN"}
         </Tag>
       ),
     },
     {
       title: "Thao tác",
+      key: "actions",
       render: (_, record) => (
         <Space>
           <Button
             icon={<EditOutlined />}
             onClick={() => {
-              form.setFieldsValue({
-                ...record,
-                applicableHours: record.applicableHours
-                  ? [
-                      moment(record.applicableHours[0], "HH:mm"),
-                      moment(record.applicableHours[1], "HH:mm"),
-                    ]
-                  : undefined,
-              });
               setSelectedPromotion(record);
+              form.setFieldsValue({
+                restaurant: record.restaurant?._id || record.restaurant,
+                name: record.title,
+                description: record.description || "",
+                type: "percentage", // Always percentage in your model
+                value: record.discountPercent,
+                startDate: moment(record.startDate),
+                endDate: moment(record.endDate),
+              });
               setIsModalOpen(true);
             }}
           >
@@ -138,7 +302,7 @@ const PromotionPage = () => {
           <Button
             danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
+            onClick={() => handleDelete(record._id)}
           >
             Xóa
           </Button>
@@ -147,10 +311,19 @@ const PromotionPage = () => {
     },
   ];
 
+  // Filter promotions by search term
+  const filteredPromotions = searchTerm
+    ? promotions.filter(
+        (promo) =>
+          promo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          promo.restaurantName?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : promotions;
+
   return (
     <Container maxWidth="lg" style={{ marginTop: 24, marginBottom: 24 }}>
       <Paper elevation={3} style={{ padding: 24, borderRadius: "8px" }}>
-        {/* Breadcrumbs - THÊM MỚI */}
+        {/* Breadcrumbs */}
         <Breadcrumbs
           separator={<NavigateNext fontSize="small" />}
           aria-label="breadcrumb"
@@ -192,13 +365,21 @@ const PromotionPage = () => {
             >
               Thêm Khuyến Mãi
             </Button>
+            <Button
+              type="default"
+              icon={<ReloadOutlined />}
+              onClick={fetchPromotions}
+              loading={loading}
+            >
+              Làm mới
+            </Button>
           </Box>
         </Box>
 
         {/* Search */}
         <div style={{ marginBottom: 16 }}>
           <Input.Search
-            placeholder="Tìm kiếm theo tên/mã..."
+            placeholder="Tìm kiếm theo tên khuyến mãi, nhà hàng..."
             allowClear
             onSearch={setSearchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -207,17 +388,18 @@ const PromotionPage = () => {
           />
         </div>
 
-        {/* Bảng danh sách */}
+        {/* Table */}
         <Table
           columns={columns}
-          dataSource={promotions}
-          rowKey="id"
+          dataSource={filteredPromotions}
+          rowKey="_id"
+          loading={loading}
           bordered
           pagination={{ pageSize: 5 }}
           style={{ marginTop: 16 }}
         />
 
-        {/* Modal form */}
+        {/* Form Modal */}
         <Modal
           title={
             selectedPromotion ? "Chỉnh sửa khuyến mãi" : "Tạo khuyến mãi mới"
@@ -231,8 +413,25 @@ const PromotionPage = () => {
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
-            initialValues={{ minOrder: 0 }}
+            initialValues={{ type: "percentage" }}
           >
+            <Form.Item
+              name="restaurant"
+              label="Nhà hàng"
+              rules={[{ required: true, message: "Vui lòng chọn nhà hàng" }]}
+            >
+              <Select 
+                placeholder="Chọn nhà hàng" 
+                disabled={selectedPromotion}
+              >
+                {restaurants.map(restaurant => (
+                  <Select.Option key={restaurant._id} value={restaurant._id}>
+                    {restaurant.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
             <Form.Item
               label="Tên khuyến mãi"
               name="name"
@@ -244,6 +443,13 @@ const PromotionPage = () => {
             </Form.Item>
 
             <Form.Item
+              name="description"
+              label="Mô tả"
+            >
+              <Input.TextArea rows={3} />
+            </Form.Item>
+
+            <Form.Item
               label="Loại khuyến mãi"
               name="type"
               rules={[{ required: true, message: "Vui lòng chọn loại" }]}
@@ -251,71 +457,66 @@ const PromotionPage = () => {
               <Select
                 options={[
                   { label: "Phần trăm", value: "percentage" },
-                  { label: "Giảm tiền trực tiếp", value: "fixed" },
                 ]}
+                disabled // Always percentage in your model
               />
             </Form.Item>
 
             <Form.Item
-              label="Giá trị"
+              label="Phần trăm giảm giá"
               name="value"
               rules={[
                 { required: true, message: "Vui lòng nhập giá trị" },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (getFieldValue("type") === "percentage" && value > 100) {
-                      return Promise.reject("Tối đa 100%");
-                    }
-                    return Promise.resolve();
-                  },
-                }),
+                { type: "number", min: 1, max: 100, message: "Giá trị từ 1-100%" }
               ]}
             >
-              <InputNumber min={0} style={{ width: "100%" }} />
+              <InputNumber min={1} max={100} style={{ width: "100%" }} />
             </Form.Item>
 
             <Form.Item label="Thời gian áp dụng" required>
-              <Space.Compact>
+              <Space.Compact style={{ display: 'flex' }}>
                 <Form.Item
                   name="startDate"
                   rules={[{ required: true, message: "Chọn ngày bắt đầu" }]}
-                  style={{ marginBottom: 0 }}
+                  style={{ marginBottom: 0, width: '45%' }}
                 >
-                  <DatePicker placeholder="Ngày bắt đầu" />
+                  <DatePicker 
+                    placeholder="Ngày bắt đầu" 
+                    style={{ width: '100%' }}
+                    format="DD/MM/YYYY"
+                  />
                 </Form.Item>
-                <span style={{ margin: "0 8px" }}>đến</span>
+                <span style={{ margin: "0 8px", display: 'inline-flex', alignItems: 'center' }}>đến</span>
                 <Form.Item
-                  name="endDate"
-                  rules={[
-                    { required: true, message: "Chọn ngày kết thúc" },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (
-                          value &&
-                          getFieldValue("startDate") &&
-                          moment(value).isBefore(getFieldValue("startDate"))
-                        ) {
-                          return Promise.reject(
-                            "Ngày kết thúc phải sau ngày bắt đầu"
-                          );
-                        }
-                        return Promise.resolve();
-                      },
-                    }),
-                  ]}
-                  style={{ marginBottom: 0 }}
-                >
-                  <DatePicker placeholder="Ngày kết thúc" />
-                </Form.Item>
+  name="endDate"
+  rules={[
+    { required: true, message: "Chọn ngày kết thúc" },
+    ({ getFieldValue }) => ({
+      validator(_, value) {
+        if (!value || !getFieldValue('startDate')) {
+          return Promise.resolve();
+        }
+        // Use moment's isAfter or isSameOrAfter correctly
+        if (moment(value).isSameOrAfter(getFieldValue('startDate'))) {
+          return Promise.resolve();
+        }
+        return Promise.reject(
+          "Ngày kết thúc phải sau ngày bắt đầu"
+        );
+      },
+    }),
+  ]}
+  style={{ marginBottom: 0, width: '45%' }}
+>
+  <DatePicker 
+    placeholder="Ngày kết thúc" 
+    style={{ width: '100%' }}
+    format="DD/MM/YYYY"
+  />
+</Form.Item>
+                  
+                  
               </Space.Compact>
-            </Form.Item>
-
-            <Form.Item
-              label="Giờ áp dụng"
-              name="applicableHours"
-              rules={[{ required: true, message: "Chọn khung giờ" }]}
-            >
-              <TimePicker.RangePicker format="HH:mm" />
             </Form.Item>
 
             <div
@@ -326,7 +527,7 @@ const PromotionPage = () => {
               }}
             >
               <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit" loading={loading}>
                 {selectedPromotion ? "Cập nhật" : "Tạo mới"}
               </Button>
             </div>

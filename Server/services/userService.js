@@ -154,8 +154,121 @@ const signIn = (userData) => {
   });
 };
 
+const getAllUsers = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const users = await User.find({});
+      resolve({
+        status: "Success",
+        message: "Users retrieved successfully",
+        data: users,
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+const detailUser = (id) => {
+  return new Promise( async (resolve, reject) => {
+    try {
+
+       const user = await User.findById(id);
+
+       if (!user) {
+         resolve({
+           status: 'Failure',
+           message: 'There was no user '
+         });
+       }
+
+       resolve({
+         status: 'Success',
+         message: 'get all User successfully',
+         data: user
+       });
+ 
+     } catch (err) {
+       reject({
+         status: 'Error',
+         message: err.message
+       });
+     }
+   });
+};
+
+const deleteUser = (id) => {
+  return new Promise( async (resolve, reject) => {
+    try {
+
+       const checkUser = await User.findById(id);
+       if (!checkUser) {
+         resolve({
+           status: 'Failure',
+           message: 'There was no user with that id'
+         });
+       }
+
+
+        await User.findByIdAndDelete(id);
+
+       resolve({
+         status: 'Success',
+         message: 'User delete successfully',
+         checkUser
+       });
+ 
+     } catch (err) {
+       reject({
+         status: 'Error',
+         message: err.message
+       });
+     }
+   });
+};
+
+const updateUser = (id, datauser) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const checkUser = await User.findById(id);
+      if (!checkUser) {
+        return resolve({
+          status: "Failure",
+          message: "There was no user with that id",
+        });
+      }
+
+      if (datauser.password) {
+        const salt = await bcrypt.genSalt(10);
+        datauser.password = await bcrypt.hash(datauser.password, salt);
+      }
+
+      datauser.updated_at = new Date();
+
+      const updatedUser = await User.findByIdAndUpdate(id, datauser, { new: true });
+      console.log("Updated user:", updatedUser);
+
+      resolve({
+        status: "Success",
+        message: "User updated successfully",
+        data: updatedUser,
+      });
+
+    } catch (err) {
+      reject({
+        status: "Error",
+        message: err.message,
+      });
+    }
+  });
+};
+
 module.exports = {
   createUser,
   signIn,
   createCustomerUser,
+  getAllUsers,
+  detailUser,
+  deleteUser,
+  updateUser,
 };

@@ -6,13 +6,13 @@ import {
   Form,
   Input,
   InputNumber,
-  Select,
   Tag,
   Switch,
   Space,
   Card,
   message,
   Tooltip,
+  Typography,
 } from "antd";
 import { Link } from "react-router-dom";
 import {
@@ -25,14 +25,12 @@ import {
   UserOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  InfoCircleOutlined,
-  ArrowLeftOutlined,
 } from "@ant-design/icons";
 
 // Material-UI components for breadcrumbs
 import {
   Box,
-  Typography,
+  Typography as MuiTypography,
   Paper,
   Breadcrumbs,
   Link as MuiLink,
@@ -46,8 +44,6 @@ import axiosInstance from "../../contexts/AxiosCustom";
 // Import CSS
 import "../../style/Staff/TableMana.scss";
 
-const { Option } = Select;
-
 const TableMana = () => {
   // State
   const [tables, setTables] = useState([]);
@@ -57,35 +53,29 @@ const TableMana = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [form] = Form.useForm();
   const [restaurant, setRestaurant] = useState(null);
-  const [tableAreas, setTableAreas] = useState([
-    "Trong nhà",
-    "Ngoài trời",
-    "Tầng 1",
-    "Tầng 2",
-    "VIP",
-    "Ban công",
-    "Khu vực hút thuốc",
-    "Khu vực không hút thuốc",
-  ]);
 
   // Lấy thông tin staff từ localStorage
   const staff = JSON.parse(localStorage.getItem("user") || "{}");
+  const token = localStorage.getItem("accessToken");
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
 
   useEffect(() => {
     // Lấy thông tin nhà hàng của staff
     const fetchStaffRestaurant = async () => {
       try {
         const response = await axiosInstance.get(
-          `/api/staff/restaurant/${staff._id}`
+          `staff/restaurant/${staff._id}`,
+          config
         );
 
-        if (
-          response.data.status === "Success" &&
-          response.data.data?.restaurant
-        ) {
-          setRestaurant(response.data.data.restaurant);
-          // Sau khi có restaurant ID, lấy danh sách bàn
-          fetchTables(response.data.data.restaurant._id);
+        if (response.data.status === "Success" && response.data.data) {
+          setRestaurant(response.data.data[0].restaurant);
+          fetchTables(response.data.data[0].restaurant._id);
         } else {
           message.error("Bạn chưa được gán cho nhà hàng nào");
         }
@@ -104,7 +94,8 @@ const TableMana = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get(
-        `/api/table/byRestaurant/${restaurantId}`
+        `/table/restaurant/${restaurantId}`,
+        config
       );
 
       if (response.data.status === "Success") {
@@ -125,9 +116,8 @@ const TableMana = () => {
 
     form.resetFields();
     form.setFieldsValue({
-      isAvailable: true,
       restaurant: restaurant?._id,
-      area: "Trong nhà",
+      isAvailable: true,
     });
 
     setIsModalOpen(true);
@@ -137,17 +127,16 @@ const TableMana = () => {
     setSelectedTable(table);
 
     form.setFieldsValue({
-      name: table.name,
+      tableNumber: table.tableNumber,
       capacity: table.capacity,
-      area: table.area || "Trong nhà",
-      isAvailable: table.isAvailable,
-      description: table.description,
+      isAvailable: table.isAvailable !== false, // Đảm bảo giá trị luôn là boolean
       restaurant: table.restaurant || restaurant?._id,
     });
 
     setIsModalOpen(true);
   };
 
+  // Sửa hàm handleSubmit để khớp với cấu trúc dữ liệu backend
   const handleSubmit = async (values) => {
     if (!restaurant?._id) {
       message.error("Không có thông tin nhà hàng");
@@ -157,17 +146,22 @@ const TableMana = () => {
     try {
       setLoading(true);
 
-      // Đảm bảo có restaurantId
+      // Đảm bảo có restaurantId và đóng gói dữ liệu phù hợp với model backend
       const tableData = {
-        ...values,
         restaurant: restaurant._id,
+        tableNumber: values.tableNumber,
+        capacity: values.capacity.toString(),
+        isAvailable: values.isAvailable !== false,
       };
+
+      console.log("Table data:", tableData);
 
       if (selectedTable) {
         // Edit mode
         const response = await axiosInstance.put(
-          `/api/table/${selectedTable._id}`,
-          tableData
+          `/table/${selectedTable._id}`,
+          tableData,
+          config
         );
 
         if (response.data.status === "Success") {
@@ -184,7 +178,7 @@ const TableMana = () => {
         }
       } else {
         // Create mode
-        const response = await axiosInstance.post("/api/table", tableData);
+        const response = await axiosInstance.post("/table", tableData, config);
 
         if (response.data.status === "Success") {
           message.success("Tạo bàn mới thành công!");
@@ -207,7 +201,6 @@ const TableMana = () => {
       setLoading(false);
     }
   };
-
   const handleDelete = async (tableId) => {
     if (
       !window.confirm(
@@ -220,7 +213,7 @@ const TableMana = () => {
     try {
       setLoading(true);
 
-      const response = await axiosInstance.delete(`/api/table/${tableId}`);
+      const response = await axiosInstance.delete(`/table/${tableId}`, config);
 
       if (response.data.status === "Success") {
         message.success("Xóa bàn thành công!");
@@ -231,33 +224,39 @@ const TableMana = () => {
       }
     } catch (error) {
       console.error("Error deleting table:", error);
-      message.error("Lỗi: " + (error.response?.data?.message || error.message));
+      if (error.response?.data?.message?.includes("reservation")) {
+        message.error("Không thể xóa bàn đã có đặt trước");
+      } else {
+        message.error(
+          "Lỗi: " + (error.response?.data?.message || error.message)
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleAvailability = async (tableId, currentAvailability) => {
+  const handleToggleAvailability = async (tableId, isAvailable) => {
     try {
-      const response = await axiosInstance.patch(
-        `/api/table/${tableId}/availability`,
-        {
-          isAvailable: !currentAvailability,
-        }
+      // Cập nhật trạng thái sẵn sàng
+      const response = await axiosInstance.put(
+        `/table/${tableId}`,
+        { isAvailable: !isAvailable },
+        config
       );
 
       if (response.data.status === "Success") {
         setTables(
           tables.map((table) =>
             table._id === tableId
-              ? { ...table, isAvailable: !currentAvailability }
+              ? { ...table, isAvailable: !isAvailable }
               : table
           )
         );
 
         message.success(
-          `Bàn ${response.data.data.name} đã ${
-            !currentAvailability ? "sẵn sàng" : "không sẵn sàng"
+          `Bàn ${response.data.data.tableNumber} đã ${
+            !isAvailable ? "sẵn sàng" : "không sẵn sàng"
           }`
         );
       } else {
@@ -272,18 +271,19 @@ const TableMana = () => {
   // Filter tables based on search term
   const filteredTables = tables.filter(
     (table) =>
-      table.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      table.area?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      table.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      table.tableNumber
+        ?.toString()
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       table.capacity?.toString().includes(searchTerm)
   );
 
   // Table columns
   const columns = [
     {
-      title: "Tên bàn",
-      dataIndex: "name",
-      key: "name",
+      title: "Mã bàn",
+      dataIndex: "tableNumber",
+      key: "tableNumber",
       render: (text) => (
         <Space>
           <TableOutlined />
@@ -292,12 +292,6 @@ const TableMana = () => {
       ),
       filteredValue: [searchTerm],
       onFilter: () => true, // Filter is applied in the filteredTables logic
-    },
-    {
-      title: "Khu vực",
-      dataIndex: "area",
-      key: "area",
-      render: (area) => area || "Trong nhà",
     },
     {
       title: "Sức chứa",
@@ -333,22 +327,6 @@ const TableMana = () => {
           {isAvailable ? "Sẵn sàng" : "Không sẵn sàng"}
         </Tag>
       ),
-    },
-    {
-      title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (description) =>
-        description ? (
-          <Tooltip placement="topLeft" title={description}>
-            {description}
-          </Tooltip>
-        ) : (
-          <span className="text-muted">Không có mô tả</span>
-        ),
     },
     {
       title: "Thao tác",
@@ -398,7 +376,7 @@ const TableMana = () => {
           >
             Dashboard
           </MuiLink>
-          <Typography color="textPrimary">Quản lý Bàn</Typography>
+          <MuiTypography color="textPrimary">Quản lý Bàn</MuiTypography>
         </Breadcrumbs>
 
         {/* Header */}
@@ -411,9 +389,9 @@ const TableMana = () => {
             flexWrap: "wrap",
           }}
         >
-          <Typography variant="h4" component="h1" gutterBottom>
+          <MuiTypography variant="h4" component="h1" gutterBottom>
             Quản lý Bàn {restaurant?.name ? `- ${restaurant.name}` : ""}
-          </Typography>
+          </MuiTypography>
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button
               type="primary"
@@ -453,7 +431,7 @@ const TableMana = () => {
         {/* Search */}
         <div style={{ marginBottom: 16 }}>
           <Input.Search
-            placeholder="Tìm kiếm theo tên bàn, khu vực hoặc sức chứa..."
+            placeholder="Tìm kiếm theo mã bàn hoặc sức chứa..."
             allowClear
             onSearch={setSearchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -481,6 +459,7 @@ const TableMana = () => {
         />
 
         {/* Form Modal */}
+        {/* Form Modal */}
         <Modal
           title={selectedTable ? "Chỉnh sửa bàn" : "Thêm bàn mới"}
           open={isModalOpen}
@@ -494,7 +473,6 @@ const TableMana = () => {
             onFinish={handleSubmit}
             initialValues={{
               isAvailable: true,
-              area: "Trong nhà",
             }}
           >
             <Form.Item name="restaurant" hidden>
@@ -502,70 +480,45 @@ const TableMana = () => {
             </Form.Item>
 
             <Form.Item
-              name="name"
-              label="Tên bàn"
-              rules={[{ required: true, message: "Vui lòng nhập tên bàn" }]}
+              name="tableNumber"
+              label="Mã bàn"
+              rules={[{ required: true, message: "Vui lòng nhập mã bàn" }]}
             >
               <Input
                 prefix={<TableOutlined />}
-                placeholder="Nhập tên bàn (VD: Bàn 1, VIP-1,...)"
+                placeholder="Nhập mã bàn (VD: A1, VIP-1,...)"
               />
             </Form.Item>
 
-            <Space
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
+            <Form.Item
+              name="capacity"
+              label="Sức chứa"
+              rules={[
+                { required: true, message: "Vui lòng nhập sức chứa" },
+                {
+                  type: "number",
+                  min: 1,
+                  message: "Sức chứa phải lớn hơn 0",
+                },
+              ]}
             >
-              <Form.Item
-                name="capacity"
-                label="Sức chứa"
-                rules={[
-                  { required: true, message: "Vui lòng nhập sức chứa" },
-                  {
-                    type: "number",
-                    min: 1,
-                    message: "Sức chứa phải lớn hơn 0",
-                  },
-                ]}
-                style={{ width: "48%" }}
-              >
-                <InputNumber
-                  min={1}
-                  style={{ width: "100%" }}
-                  placeholder="Nhập số người"
-                  prefix={<UserOutlined />}
-                />
-              </Form.Item>
-
-              <Form.Item name="area" label="Khu vực" style={{ width: "48%" }}>
-                <Select placeholder="Chọn khu vực">
-                  {tableAreas.map((area) => (
-                    <Option key={area} value={area}>
-                      {area}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Space>
+              <InputNumber
+                min={1}
+                style={{ width: "100%" }}
+                placeholder="Nhập số người"
+                prefix={<UserOutlined />}
+              />
+            </Form.Item>
 
             <Form.Item
               name="isAvailable"
               label="Trạng thái"
               valuePropName="checked"
+              initialValue={true}
             >
               <Switch
                 checkedChildren="Sẵn sàng"
                 unCheckedChildren="Không sẵn sàng"
-              />
-            </Form.Item>
-
-            <Form.Item name="description" label="Mô tả">
-              <Input.TextArea
-                rows={3}
-                placeholder="Nhập mô tả chi tiết về bàn (nếu có)"
               />
             </Form.Item>
 

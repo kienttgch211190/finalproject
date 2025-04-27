@@ -1,6 +1,7 @@
 const TableInfo = require("../models/TableInfo");
 const Reservation = require("../models/Reservation");
 
+// Sửa hàm getAvailableTables
 const getAvailableTables = async (
   restaurantId,
   date,
@@ -35,10 +36,16 @@ const getAvailableTables = async (
       };
     }
 
+    // Chuyển đổi chuỗi date thành đối tượng Date chính xác
+    // Đây là vấn đề chính - khi chuỗi YYYY-MM-DD được chuyển thành Date có thể gây lệch múi giờ
+    const reservationDate = new Date(date);
+    // Đặt giờ, phút, giây, mili giây về 0 để tránh vấn đề về múi giờ
+    reservationDate.setHours(0, 0, 0, 0);
+
     // Find reservations for the given date and time that aren't cancelled
     const reservations = await Reservation.find({
       restaurant: restaurantId,
-      reservationDate: new Date(date),
+      reservationDate: reservationDate, // Sử dụng đối tượng Date đã xử lý
       reservationTime: reservationTime,
       status: { $nin: ["cancelled"] },
     });
@@ -76,29 +83,28 @@ const getAvailableTables = async (
     return { status: "Error", message: error.message };
   }
 };
-
 // Add this function to reservationService.js
 const getAllReservationsAdmin = async (query = {}) => {
   try {
     // Build filters based on query parameters (for future enhancement)
     const filters = {};
-    
+
     if (query.status) {
       filters.status = query.status;
     }
-    
+
     // You can add more filters here as needed
-    
+
     // Get all reservations with populated references
     const reservations = await Reservation.find(filters)
       .populate("user", "name email phone")
       .populate("restaurant", "name address")
       .populate("table");
 
-    return { 
-      status: "Success", 
+    return {
+      status: "Success",
       message: "Reservations retrieved successfully",
-      data: reservations 
+      data: reservations,
     };
   } catch (error) {
     return { status: "Error", message: error.message };
@@ -228,9 +234,9 @@ const cancelReservation = async (id) => {
   }
 };
 
-const getAllReservations = async (userId) => {
+const getAllReservations = async (restaurantId) => {
   try {
-    const reservations = await Reservation.find({ user: userId })
+    const reservations = await Reservation.find({ restaurant: restaurantId })
       .populate("user")
       .populate("restaurant")
       .populate("table");
@@ -292,21 +298,21 @@ const getRecentReservations = async (limit = 5) => {
     // Calculate date one day ago
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    
+
     // Get recent reservations from the last day
     const reservations = await Reservation.find({
-      createdAt: { $gte: oneDayAgo }
+      createdAt: { $gte: oneDayAgo },
     })
-    .sort({ createdAt: -1 }) // Sort by newest first
-    .limit(limit)
-    .populate("user", "name email phone")
-    .populate("restaurant", "name address")
-    .populate("table", "tableNumber capacity");
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .limit(limit)
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table", "tableNumber capacity");
 
-    return { 
-      status: "Success", 
+    return {
+      status: "Success",
       message: "Recent reservations retrieved successfully",
-      data: reservations 
+      data: reservations,
     };
   } catch (error) {
     return { status: "Error", message: error.message };
@@ -319,32 +325,32 @@ const getRestaurantTodayReservations = async (restaurantId) => {
     if (!restaurantId) {
       return { status: "Error", message: "Restaurant ID is required" };
     }
-    
+
     // Get start and end of today in local time
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     // Find all reservations for the restaurant today
     const reservations = await Reservation.find({
       restaurant: restaurantId,
       reservationDate: {
         $gte: today,
-        $lt: tomorrow
+        $lt: tomorrow,
       },
-      status: { $ne: "cancelled" }
+      status: { $ne: "cancelled" },
     })
-    .populate("user", "name email phone")
-    .populate("restaurant", "name address")
-    .populate("table", "tableNumber capacity")
-    .sort({ reservationTime: 1 }); // Sort by time ascending
-    
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table", "tableNumber capacity")
+      .sort({ reservationTime: 1 }); // Sort by time ascending
+
     return {
       status: "Success",
       message: "Today's reservations retrieved successfully",
-      data: reservations
+      data: reservations,
     };
   } catch (error) {
     return { status: "Error", message: error.message };
@@ -357,27 +363,163 @@ const getRestaurantPendingReservations = async (restaurantId) => {
     if (!restaurantId) {
       return { status: "Error", message: "Restaurant ID is required" };
     }
-    
+
     // Find all pending reservations for the restaurant
     const pendingReservations = await Reservation.find({
       restaurant: restaurantId,
-      status: "pending"
+      status: "pending",
     })
-    .populate("user", "name email phone")
-    .populate("restaurant", "name address")
-    .populate("table", "tableNumber capacity")
-    .sort({ reservationDate: 1, reservationTime: 1 }); // Sort by date and time
-    
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table", "tableNumber capacity")
+      .sort({ reservationDate: 1, reservationTime: 1 }); // Sort by date and time
+
     return {
       status: "Success",
       message: "Pending reservations retrieved successfully",
-      data: pendingReservations
+      data: pendingReservations,
     };
   } catch (error) {
     return { status: "Error", message: error.message };
   }
 };
 
+// Thêm hàm này vào cuối file trước module.exports
+const getRestaurantCompletedReservations = async (restaurantId, query = {}) => {
+  try {
+    if (!restaurantId) {
+      return { status: "Error", message: "Restaurant ID is required" };
+    }
+
+    // Xây dựng query filter
+    const filter = {
+      restaurant: restaurantId,
+      status: "completed",
+    };
+
+    // Thêm filter theo ngày nếu có
+    if (query.startDate && query.endDate) {
+      filter.reservationDate = {
+        $gte: new Date(query.startDate),
+        $lte: new Date(query.endDate),
+      };
+    } else if (query.startDate) {
+      filter.reservationDate = { $gte: new Date(query.startDate) };
+    } else if (query.endDate) {
+      filter.reservationDate = { $lte: new Date(query.endDate) };
+    }
+
+    // Tìm tất cả đơn đặt bàn đã hoàn thành của nhà hàng
+    const completedReservations = await Reservation.find(filter)
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table", "tableNumber capacity name")
+      .sort({ reservationDate: -1, reservationTime: 1 }); // Sắp xếp theo ngày gần nhất và giờ tăng dần
+
+    return {
+      status: "Success",
+      message: "Completed reservations retrieved successfully",
+      data: completedReservations,
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
+const getRestaurantConfirmedReservations = async (restaurantId, query = {}) => {
+  try {
+    if (!restaurantId) {
+      return { status: "Error", message: "Restaurant ID is required" };
+    }
+
+    // Xây dựng query filter
+    const filter = {
+      restaurant: restaurantId,
+      status: "confirmed",
+    };
+
+    // Thêm filter theo ngày nếu có
+    if (query.date) {
+      const selectedDate = new Date(query.date);
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(selectedDate.getDate() + 1);
+
+      filter.reservationDate = {
+        $gte: selectedDate,
+        $lt: nextDay,
+      };
+    } else if (query.startDate && query.endDate) {
+      filter.reservationDate = {
+        $gte: new Date(query.startDate),
+        $lte: new Date(query.endDate),
+      };
+    }
+
+    // Tìm tất cả đơn đặt bàn đã xác nhận của nhà hàng
+    const confirmedReservations = await Reservation.find(filter)
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table", "tableNumber capacity name")
+      .sort({ reservationDate: 1, reservationTime: 1 }); // Sắp xếp theo ngày và giờ
+
+    return {
+      status: "Success",
+      message: "Confirmed reservations retrieved successfully",
+      data: confirmedReservations,
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
+// Thêm hàm lấy danh sách đặt bàn đã hủy (cancelled)
+const getRestaurantCancelledReservations = async (restaurantId, query = {}) => {
+  try {
+    if (!restaurantId) {
+      return { status: "Error", message: "Restaurant ID is required" };
+    }
+
+    // Xây dựng query filter
+    const filter = {
+      restaurant: restaurantId,
+      status: "cancelled",
+    };
+
+    // Thêm filter theo ngày nếu có
+    if (query.date) {
+      const selectedDate = new Date(query.date);
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(selectedDate.getDate() + 1);
+
+      filter.reservationDate = {
+        $gte: selectedDate,
+        $lt: nextDay,
+      };
+    } else if (query.startDate && query.endDate) {
+      filter.reservationDate = {
+        $gte: new Date(query.startDate),
+        $lte: new Date(query.endDate),
+      };
+    }
+
+    // Tìm tất cả đơn đặt bàn đã hủy của nhà hàng
+    const cancelledReservations = await Reservation.find(filter)
+      .populate("user", "name email phone")
+      .populate("restaurant", "name address")
+      .populate("table", "tableNumber capacity name")
+      .sort({ updatedAt: -1 }); // Sắp xếp theo thời gian hủy gần đây nhất
+
+    return {
+      status: "Success",
+      message: "Cancelled reservations retrieved successfully",
+      data: cancelledReservations,
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
+// Thêm function vào module.exports
 module.exports = {
   getAvailableTables,
   createReservation,
@@ -390,4 +532,7 @@ module.exports = {
   getRecentReservations,
   getRestaurantTodayReservations,
   getRestaurantPendingReservations,
+  getRestaurantCompletedReservations,
+  getRestaurantConfirmedReservations,
+  getRestaurantCancelledReservations,
 };

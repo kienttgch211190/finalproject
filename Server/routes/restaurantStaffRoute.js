@@ -7,7 +7,12 @@ const {
   updateStaffAssignment,
   removeStaff,
 } = require("../controllers/restaurantStaffController");
-const { authMiddleware,isStaff, isAdmin } = require("../middlewares/middleware");
+const {
+  authMiddleware,
+  isStaff,
+  isAdmin,
+  isStaffOrAdmin,
+} = require("../middlewares/middleware");
 
 /**
  * @route POST /api/staff/assign
@@ -24,7 +29,7 @@ router.post("/assign", authMiddleware("access"), isAdmin, assignStaff);
 router.get(
   "/restaurant/:userId",
   authMiddleware("access"),
-  isStaff,
+  isStaffOrAdmin,
   getRestaurantStaff
 );
 

@@ -111,101 +111,161 @@ const RestaurantInfo = () => {
     fetchRestaurantData();
   }, []);
 
-// Fetch restaurant data
-const fetchRestaurantData = async () => {
-  try {
-    setLoading(true);
+  // Fetch restaurant data
+  const fetchRestaurantData = async () => {
+    try {
+      setLoading(true);
 
-    // Fetch staff's restaurant info
-    const staffResponse = await axiosInstance.get(
-      `/staff/restaurant/${staff._id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`, 
-        },  
-      }
-    );
-    console.log("Staff response:", staffResponse);
-
-    // Check if the response has data and restaurant info
-    if (
-      staffResponse.data.status === "Success" && 
-      staffResponse.data.data && 
-      staffResponse.data.data.length > 0 &&
-      staffResponse.data.data[0].restaurant
-    ) {
-      const restaurantId = staffResponse.data.data[0].restaurant._id;
-      console.log("Restaurant ID:", restaurantId);
-      
-      // Fetch detailed restaurant data
-      const restaurantResponse = await axiosInstance.get(
-        `/restaurant/detail/${restaurantId}`,
+      // Fetch staff's restaurant info
+      const staffResponse = await axiosInstance.get(
+        `/staff/restaurant/${staff._id}`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`, 
-          },  
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
       );
-      console.log("Restaurant response:", restaurantResponse);
+      console.log("Staff response:", staffResponse);
 
-      if (restaurantResponse.data.status === "Success") {
-        setRestaurant(restaurantResponse.data.data);
+      // Check if the response has data and restaurant info
+      if (
+        staffResponse.data.status === "Success" &&
+        staffResponse.data.data &&
+        staffResponse.data.data.length > 0 &&
+        staffResponse.data.data[0].restaurant
+      ) {
+        const restaurantId = staffResponse.data.data[0].restaurant._id;
+        console.log("Restaurant ID:", restaurantId);
 
-        // Fetch additional stats
-        fetchRestaurantStats(restaurantId);
+        // Fetch detailed restaurant data
+        const restaurantResponse = await axiosInstance.get(
+          `/restaurant/detail/${restaurantId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+        console.log("Restaurant response:", restaurantResponse);
+
+        if (restaurantResponse.data.status === "Success") {
+          setRestaurant(restaurantResponse.data.data);
+
+          // Fetch additional stats
+          fetchRestaurantStats(restaurantId);
+        } else {
+          throw new Error("Không thể lấy thông tin nhà hàng");
+        }
       } else {
-        throw new Error("Không thể lấy thông tin nhà hàng");
+        message.error("Bạn chưa được gán cho nhà hàng nào");
       }
-    } else {
-      message.error("Bạn chưa được gán cho nhà hàng nào");
+    } catch (error) {
+      console.error("Error fetching restaurant data:", error);
+      message.error("Không thể tải thông tin nhà hàng");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching restaurant data:", error);
-    message.error("Không thể tải thông tin nhà hàng");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Fetch restaurant statistics
+  // Fetch restaurant statistics - Thay thế hàm mock data hiện tại
   const fetchRestaurantStats = async (restaurantId) => {
     try {
-      // In a real application, you would make API calls to get these stats
-      // For this template, we'll use mock data
+      const token = localStorage.getItem("accessToken");
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
 
-      // Example API calls:
-      // const tablesResponse = await axiosInstance.get(`/api/table/byRestaurant/${restaurantId}`);
-      // const reservationsResponse = await axiosInstance.get(`/api/reservation/restaurant/${restaurantId}/stats`);
-      // const menuItemsResponse = await axiosInstance.get(`/api/menu/restaurant/${restaurantId}/itemCount`);
+      // Tạo các promises cho các API calls cần thiết
+      const [
+        tablesResponse,
+        reservationsResponse,
+        menuResponse,
+        reviewStatsResponse,
+      ] = await Promise.all([
+        // 1. Lấy danh sách bàn để đếm tổng số
+        axiosInstance.get(`/table/restaurant/${restaurantId}`, config),
 
-      // Mock data for demonstration
+        // 2. Lấy tất cả đơn đặt bàn để đếm tổng số
+        axiosInstance.get(`/reservation/restaurant/${restaurantId}`, config),
+
+        // 3. Lấy menu của nhà hàng để đếm món ăn
+        axiosInstance.get(`/menu/restaurant/${restaurantId}`, config),
+
+        // 4. Lấy thống kê đánh giá của nhà hàng
+        axiosInstance.get(`/review/stats/restaurant/${restaurantId}`, config),
+      ]);
+
+      // Xử lý tổng số bàn
+      const totalTables =
+        tablesResponse.data.status === "Success"
+          ? tablesResponse.data.data.length
+          : 0;
+
+      // Xử lý tổng số đơn đặt bàn
+      const totalReservations =
+        reservationsResponse.data.status === "Success"
+          ? reservationsResponse.data.data.length
+          : 0;
+
+      // Xử lý tổng số món ăn
+      let totalMenuItems = 0;
+      if (menuResponse.data.status === "Success") {
+        const menus = menuResponse.data.data || [];
+
+        // Lấy tổng số món ăn từ tất cả các menu
+        if (menus.length > 0) {
+          // Lấy tổng số món ăn từ tất cả menu
+          const menuItemsPromises = menus.map((menu) =>
+            axiosInstance.get(`/menu/${menu._id}/items`, config)
+          );
+
+          const menuItemsResponses = await Promise.all(menuItemsPromises);
+
+          // Tính tổng số món ăn
+          totalMenuItems = menuItemsResponses.reduce((total, response) => {
+            if (response.data.status === "Success") {
+              return total + (response.data.data?.length || 0);
+            }
+            return total;
+          }, 0);
+        }
+      }
+
+      // Xử lý đánh giá trung bình
+      const averageRating =
+        reviewStatsResponse.data.status === "Success"
+          ? reviewStatsResponse.data.data.averageRating || 0
+          : 0;
+
+      // Cập nhật state với dữ liệu thống kê thực tế
       setStats({
-        totalReservations: 156,
-        totalTables: 12,
-        totalMenuItems: 35,
-        averageRating: 4.7,
-        dailyReservations: [
-          { date: "2023-07-01", count: 10 },
-          { date: "2023-07-02", count: 15 },
-          { date: "2023-07-03", count: 8 },
-          { date: "2023-07-04", count: 12 },
-          { date: "2023-07-05", count: 20 },
-          { date: "2023-07-06", count: 18 },
-          { date: "2023-07-07", count: 25 },
-        ],
-        monthlyRevenue: [
-          { month: "Jan", amount: 25000000 },
-          { month: "Feb", amount: 30000000 },
-          { month: "Mar", amount: 28000000 },
-          { month: "Apr", amount: 32000000 },
-          { month: "May", amount: 35000000 },
-          { month: "Jun", amount: 40000000 },
-          { month: "Jul", amount: 38000000 },
-        ],
+        totalReservations,
+        totalTables,
+        totalMenuItems,
+        averageRating,
+        // Bạn có thể thêm dữ liệu biểu đồ ở đây nếu có endpoints phù hợp
+        dailyReservations: [],
+        monthlyRevenue: [],
       });
+
+      // Nếu muốn có dữ liệu biểu đồ, bạn cần thêm các API calls và xử lý dữ liệu phù hợp
+      // Ví dụ: lấy đặt bàn theo ngày hoặc doanh thu theo tháng
     } catch (error) {
       console.error("Error fetching restaurant statistics:", error);
       message.error("Không thể tải thống kê nhà hàng");
+
+      // Fallback với dữ liệu mặc định khi lỗi
+      setStats({
+        totalReservations: 0,
+        totalTables: 0,
+        totalMenuItems: 0,
+        averageRating: 0,
+        dailyReservations: [],
+        monthlyRevenue: [],
+      });
     }
   };
 

@@ -64,5 +64,13 @@ const isAdmin = (req, res, next) => {
   }
   next();
 };
+const isStaffOrAdmin = (req, res, next) => {
+  if (!req.user || (req.user.payload.role !== "admin" && req.user.payload.role !== "staff")) {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Only admin or staff can access this." });
+  }
+  next();
+};
 
-module.exports = { authMiddleware, isStaff, isAdmin };
+module.exports = { authMiddleware, isStaff, isAdmin, isStaffOrAdmin };

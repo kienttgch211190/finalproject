@@ -14,6 +14,10 @@ import TableMana from "./views/Staff/TableMana";
 import Promotion from "./views/Admin/Promotion";
 import AdminDashboard from "./views/Admin/Dashboard";
 import StaffDashboard from "./views/Staff/Dashboard";
+import PendingReservation from "./views/Staff/PendingReservation";
+import StaffPromotion from "./views/Staff/StaffPromotion";
+import RestaurantDetail from "./views/Customer/RestaurantDetail";
+import NewReservation from "./views/Customer/NewReservation";
 
 // Tạo Protected Route component để kiểm tra đăng nhập
 const ProtectedRoute = ({ children }) => {
@@ -71,7 +75,7 @@ function App() {
           path="/restaurant/:id"
           element={
             <ProtectedRoute>
-              <div>Restaurant Detail - Sẽ được triển khai sau</div>
+              <RestaurantDetail />
             </ProtectedRoute>
           }
         />
@@ -79,7 +83,7 @@ function App() {
           path="/reservation/new"
           element={
             <ProtectedRoute>
-              <div>New Reservation - Sẽ được triển khai sau</div>
+              <NewReservation />
             </ProtectedRoute>
           }
         />
@@ -113,7 +117,7 @@ function App() {
           path="/admin/menus"
           element={
             <RoleBasedRoute allowedRoles={["admin"]}>
-              <AdminMenu/>
+              <AdminMenu />
             </RoleBasedRoute>
           }
         />
@@ -163,15 +167,15 @@ function App() {
           path="/staff/reservations/pending"
           element={
             <RoleBasedRoute allowedRoles={["staff"]}>
-              <div>Pending Reservations - Sẽ được triển khai sau</div>
+              <PendingReservation />
             </RoleBasedRoute>
           }
         />
         <Route
-          path="/staff/reservation/:id"
+          path="/staff/promotions"
           element={
             <RoleBasedRoute allowedRoles={["staff"]}>
-              <div>Reservation Detail - Sẽ được triển khai sau</div>
+              <StaffPromotion />
             </RoleBasedRoute>
           }
         />

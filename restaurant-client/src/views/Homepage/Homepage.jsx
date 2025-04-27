@@ -51,6 +51,7 @@ const Homepage = () => {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState([]);
   const [promotions, setPromotions] = useState([]);
+  console.log("promotions", promotions);
   const [filters, setFilters] = useState({
     cuisineType: "",
     priceRange: "",
@@ -76,8 +77,8 @@ const Homepage = () => {
         if (filters.priceRange) params.priceRange = filters.priceRange;
 
         const [restaurantsResponse, promotionsResponse] = await Promise.all([
-          axios.get(`/api/restaurant`, { params }),
-          axios.get(`/api/promotion/active`),
+          axios.get(`/restaurant`, { params }),
+          axios.get(`/promotion/active`),
         ]);
 
         if (restaurantsResponse.data.status === "Success") {
@@ -342,11 +343,7 @@ const Homepage = () => {
               {promotions.slice(0, 3).map((promotion) => (
                 <Col xs={24} sm={12} md={8} key={promotion._id}>
                   <Badge.Ribbon
-                    text={
-                      promotion.type === "percentage"
-                        ? `${promotion.value}%`
-                        : `${promotion.value.toLocaleString()}đ`
-                    }
+                    text={`-${promotion.discountPercent || 0}%`}
                     color="#ff4d4f"
                     className="promotion-ribbon"
                   >

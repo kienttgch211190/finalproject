@@ -109,22 +109,21 @@ const ReservationMana = () => {
     fetchStaffRestaurant();
   }, []);
 
-  // Load reservations khi có restaurant
+  // Load reservations khi có restaurant hoặc khi tab thay đổi
   useEffect(() => {
     if (restaurant?._id) {
       fetchReservations();
       fetchTables(restaurant._id);
     }
-  }, [restaurant, activeTab]);
+  }, [restaurant, activeTab, dateFilter]);
 
+  const token = localStorage.getItem("accessToken");
 
-   const token = localStorage.getItem("accessToken");
-        
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`, 
-      },  
-    };
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
 
   // Fetch thông tin nhà hàng của staff
   const fetchStaffRestaurant = async () => {
@@ -135,11 +134,21 @@ const ReservationMana = () => {
         config
       );
 
-      if (
-        response.data.status === "Success" &&
-        response.data.data?.restaurant
-      ) {
-        setRestaurant(response.data.data.restaurant);
+      console.log("Staff restaurant response:", response.data);
+
+      if (response.data.status === "Success") {
+        // Xử lý cả hai trường hợp cấu trúc dữ liệu có thể xảy ra
+        if (response.data.data && response.data.data.restaurant) {
+          setRestaurant(response.data.data.restaurant);
+        } else if (
+          response.data.data &&
+          response.data.data[0] &&
+          response.data.data[0].restaurant
+        ) {
+          setRestaurant(response.data.data[0].restaurant);
+        } else {
+          message.error("Bạn chưa được gán cho nhà hàng nào");
+        }
       } else {
         message.error("Bạn chưa được gán cho nhà hàng nào");
       }
@@ -158,19 +167,23 @@ const ReservationMana = () => {
     try {
       setLoading(true);
       let endpoint = `/reservation/restaurant/${restaurant._id}`;
+      console.log("Fetching reservations for restaurant:", restaurant._id);
 
       // Áp dụng filter theo tab
       if (activeTab !== "all") {
-        endpoint += `/${activeTab}`;
+        endpoint = `/reservation/restaurant/${restaurant._id}/${activeTab}`;
       }
 
       // Filter theo ngày nếu có
       if (dateFilter) {
         const formattedDate = moment(dateFilter).format("YYYY-MM-DD");
-        endpoint += `?date=${formattedDate}`;
+        endpoint += endpoint.includes("?")
+          ? `&date=${formattedDate}`
+          : `?date=${formattedDate}`;
       }
 
       const response = await axiosInstance.get(endpoint, config);
+      console.log("Reservation response:", response.data);
 
       if (response.data.status === "Success") {
         setReservations(response.data.data || []);
@@ -191,8 +204,10 @@ const ReservationMana = () => {
 
     try {
       const response = await axiosInstance.get(
-        `/table/byRestaurant/${restaurantId}`, config
+        `/table/restaurant/${restaurantId}`,
+        config
       );
+
       if (response.data.status === "Success") {
         setTables(response.data.data || []);
       }
@@ -219,11 +234,13 @@ const ReservationMana = () => {
   const handleStatusChange = async (id, newStatus) => {
     try {
       setLoading(true);
+
       const response = await axiosInstance.put(
         `/reservation/status/${id}`,
         {
           status: newStatus,
-        },config
+        },
+        config
       );
 
       if (response.data.status === "Success") {
@@ -237,11 +254,20 @@ const ReservationMana = () => {
             res._id === id ? { ...res, status: newStatus } : res
           )
         );
+
+        // Refresh lại danh sách sau khi thay đổi trạng thái
+        fetchReservations();
       } else {
-        message.error("Không thể cập nhật trạng thái");
+        message.error(
+          "Không thể cập nhật trạng thái: " + (response.data.message || "")
+        );
       }
     } catch (error) {
-      message.error("Có lỗi xảy ra khi cập nhật trạng thái");
+      console.error("Error updating reservation status:", error);
+      message.error(
+        "Có lỗi xảy ra khi cập nhật trạng thái: " +
+          (error.response?.data?.message || error.message)
+      );
     } finally {
       setLoading(false);
     }
@@ -295,10 +321,11 @@ const ReservationMana = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.put(
-        `/reservation/${reservationId}`,
+        `/reservation/update/${reservationId}`,
         {
           table: tableId,
-        }
+        },
+        config
       );
 
       if (response.data.status === "Success") {
@@ -332,10 +359,10 @@ const ReservationMana = () => {
   // Filter reservations based on table filter and search term
   const filteredReservations = reservations.filter((reservation) => {
     const matchesSearch = searchTerm
-      ? (reservation.customer?.name || "")
+      ? (reservation.user?.name || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        (reservation.customer?.phone || "").includes(searchTerm) ||
+        (reservation.user?.phone || "").includes(searchTerm) ||
         (reservation.table?.name || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
@@ -376,14 +403,13 @@ const ReservationMana = () => {
   const columns = [
     {
       title: "Khách hàng",
-      dataIndex: ["customer", "name"],
       key: "customerName",
-      render: (text, record) => (
+      render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{text || "Khách không có tên"}</Text>
-          {record.customer?.phone && (
+          <Text strong>{record.user?.name || "Khách không có tên"}</Text>
+          {record.user?.phone && (
             <Text type="secondary">
-              <PhoneOutlined /> {record.customer.phone}
+              <PhoneOutlined /> {record.user.phone}
             </Text>
           )}
         </Space>
@@ -397,28 +423,38 @@ const ReservationMana = () => {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text>
-            <CalendarOutlined /> {moment(record.dateTime).format("DD/MM/YYYY")}
+            <CalendarOutlined />{" "}
+            {moment(record.reservationDate).format("DD/MM/YYYY")}
           </Text>
           <Text type="secondary">
-            <ClockCircleOutlined /> {moment(record.dateTime).format("HH:mm")}
+            <ClockCircleOutlined /> {record.reservationTime}
           </Text>
         </Space>
       ),
-      sorter: (a, b) =>
-        moment(a.dateTime).valueOf() - moment(b.dateTime).valueOf(),
+      sorter: (a, b) => {
+        const aDate = moment(
+          `${a.reservationDate} ${a.reservationTime}`,
+          "YYYY-MM-DD HH:mm"
+        );
+        const bDate = moment(
+          `${b.reservationDate} ${b.reservationTime}`,
+          "YYYY-MM-DD HH:mm"
+        );
+        return aDate.valueOf() - bDate.valueOf();
+      },
       defaultSortOrder: "ascend",
     },
     {
       title: "Số khách",
-      dataIndex: "numberOfGuests",
-      key: "numberOfGuests",
+      dataIndex: "numGuests",
+      key: "numGuests",
       render: (guests) => (
         <Space>
           <UserOutlined />
           <span>{guests} người</span>
         </Space>
       ),
-      sorter: (a, b) => a.numberOfGuests - b.numberOfGuests,
+      sorter: (a, b) => a.numGuests - b.numGuests,
     },
     {
       title: "Bàn",
@@ -437,12 +473,16 @@ const ReservationMana = () => {
         >
           {tables.map((table) => (
             <Option key={table._id} value={table._id}>
-              <TableOutlined /> {table.name} ({table.capacity} người)
+              <TableOutlined /> {table.name || table.tableNumber} (
+              {table.capacity} người)
             </Option>
           ))}
         </Select>
       ),
-      filters: tables.map((table) => ({ text: table.name, value: table._id })),
+      filters: tables.map((table) => ({
+        text: table.name || table.tableNumber,
+        value: table._id,
+      })),
       onFilter: (value, record) => record.table?._id === value,
     },
     {
@@ -729,7 +769,7 @@ const ReservationMana = () => {
               >
                 {tables.map((table) => (
                   <Option key={table._id} value={table._id}>
-                    <TableOutlined /> {table.name}
+                    <TableOutlined /> {table.name || `Bàn ${table.tableNumber}`}
                   </Option>
                 ))}
               </Select>
@@ -785,21 +825,19 @@ const ReservationMana = () => {
                 <div className="detail-grid">
                   <div className="detail-item">
                     <Text type="secondary">Tên khách hàng:</Text>
-                    <Text strong>{selectedReservation.customer?.name}</Text>
+                    <Text strong>
+                      {selectedReservation.user?.name || "Không có tên"}
+                    </Text>
                   </div>
 
                   <div className="detail-item">
                     <Text type="secondary">Số điện thoại:</Text>
-                    <Text>
-                      {selectedReservation.customer?.phone || "Không có"}
-                    </Text>
+                    <Text>{selectedReservation.user?.phone || "Không có"}</Text>
                   </div>
 
                   <div className="detail-item">
                     <Text type="secondary">Email:</Text>
-                    <Text>
-                      {selectedReservation.customer?.email || "Không có"}
-                    </Text>
+                    <Text>{selectedReservation.user?.email || "Không có"}</Text>
                   </div>
                 </div>
               </div>
@@ -812,7 +850,7 @@ const ReservationMana = () => {
                   <div className="detail-item">
                     <Text type="secondary">Ngày đặt:</Text>
                     <Text strong>
-                      {moment(selectedReservation.dateTime).format(
+                      {moment(selectedReservation.reservationDate).format(
                         "DD/MM/YYYY"
                       )}
                     </Text>
@@ -820,20 +858,21 @@ const ReservationMana = () => {
 
                   <div className="detail-item">
                     <Text type="secondary">Giờ đặt:</Text>
-                    <Text strong>
-                      {moment(selectedReservation.dateTime).format("HH:mm")}
-                    </Text>
+                    <Text strong>{selectedReservation.reservationTime}</Text>
                   </div>
 
                   <div className="detail-item">
                     <Text type="secondary">Số lượng khách:</Text>
-                    <Text>{selectedReservation.numberOfGuests} người</Text>
+                    <Text>{selectedReservation.numGuests} người</Text>
                   </div>
 
                   <div className="detail-item">
                     <Text type="secondary">Bàn:</Text>
                     <Text>
-                      {selectedReservation.table?.name || "Chưa chọn bàn"}
+                      {selectedReservation.table?.name ||
+                        (selectedReservation.table?.tableNumber &&
+                          `Bàn ${selectedReservation.table?.tableNumber}`) ||
+                        "Chưa chọn bàn"}
                     </Text>
                   </div>
 

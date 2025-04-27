@@ -5,7 +5,7 @@ const Reservation = require("../models/Reservation");
 // Create a new table
 const createTable = async (tableData) => {
   try {
-    const { restaurant, tableNumber, capacity } = tableData;
+    const { restaurant, tableNumber, capacity, isAvailable } = tableData;
 
     // Validate required fields
     if (!restaurant || !tableNumber || !capacity) {

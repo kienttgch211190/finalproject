@@ -37,7 +37,7 @@ import {
   CloseCircleOutlined,
   InfoCircleOutlined,
   PercentageOutlined,
-  ReloadOutlined
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "../../contexts/AxiosCustom";
@@ -60,8 +60,7 @@ const StaffDashboard = () => {
     activePromotions: [],
   });
 
-  console.log("Dashboard data:", dashboardData.todayReservations);
-
+  console.log("Dashboard data:", dashboardData);
   // Get staff info from localStorage
   const staff = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -70,28 +69,28 @@ const StaffDashboard = () => {
   }, []);
 
   const token = localStorage.getItem("accessToken");
-      
+
   const config = {
     headers: {
-      Authorization: `Bearer ${token}`, 
-    },  
+      Authorization: `Bearer ${token}`,
+    },
   };
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-  
+
       // Fetch staff's restaurant info
       const staffResponse = await axios.get(
         `/staff/restaurant/${staff._id}`,
         config
       );
       const restaurantId = staffResponse.data?.data?.[0]?.restaurant?._id;
-  
+
       if (!restaurantId) {
         throw new Error("Bạn chưa được gán cho nhà hàng nào");
       }
-         
+
       // Fetch restaurant data
       const [
         restaurantResponse,
@@ -100,11 +99,31 @@ const StaffDashboard = () => {
         activePromotionsResponse,
       ] = await Promise.all([
         axios.get(`/restaurant/detail/${restaurantId}`, config),
-        axios.get(`/reservation/restaurant/${restaurantId}/today`, config).catch(() => ({ data: { status: "Success", data: [] } })),
-        axios.get(`/reservation/restaurant/${restaurantId}/pending`, config).catch(() => ({ data: { status: "Success", data: [] } })),
-        axios.get(`/promotion/restaurant/${restaurantId}/active`, config).catch(() => ({ data: { status: "Success", data: [] } })),
+        axios
+          .get(`/reservation/restaurant/${restaurantId}/today`, config)
+          .catch(() => ({ data: { status: "Success", data: [] } })),
+        axios
+          .get(`/reservation/restaurant/${restaurantId}/pending`, config)
+          .catch(() => ({ data: { status: "Success", data: [] } })),
+        axios
+          .get(`/promotion/restaurant/${restaurantId}/active`, config)
+          .catch(() => ({ data: { status: "Success", data: [] } })),
       ]);
-  
+
+      console.log("Restaurant data:", restaurantResponse.data.data);
+      console.log(
+        "Today reservations data:",
+        todayReservationsResponse.data.data
+      );
+      console.log(
+        "Pending reservations data:",
+        pendingReservationsResponse.data.data
+      );
+      console.log(
+        "Active promotions data:",
+        activePromotionsResponse.data.data
+      );
+
       // Use the actual response data without any mock fallbacks
       setDashboardData({
         restaurant: restaurantResponse.data.data,
@@ -112,13 +131,12 @@ const StaffDashboard = () => {
         pendingReservations: pendingReservationsResponse.data.data || [],
         activePromotions: activePromotionsResponse.data.data || [],
       });
-  
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       message.error(
         error.message || "Không thể tải dữ liệu. Vui lòng thử lại sau."
       );
-      
+
       // Don't set mock data, just initialize with empty values
       setDashboardData({
         restaurant: null,
@@ -154,18 +172,106 @@ const StaffDashboard = () => {
     }
   };
 
-  const handleConfirmReservation = (reservationId) => {
-    message.info("Chức năng này đang được phát triển");
+  const handleConfirmReservation = async (reservationId) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.put(
+        `/reservation/status/${reservationId}`,
+        {
+          status: "confirmed",
+        },
+        config
+      );
+
+      if (response.data.status === "Success") {
+        message.success("Xác nhận đặt bàn thành công!");
+
+        // Cập nhật UI bằng cách cập nhật trạng thái reservation trong dashboardData
+        setDashboardData((prev) => ({
+          ...prev,
+          pendingReservations: prev.pendingReservations.filter(
+            (res) => res._id !== reservationId
+          ),
+          // Nếu đặt bàn đó có trong danh sách đặt bàn hôm nay, cập nhật trạng thái
+          todayReservations: prev.todayReservations.map((res) =>
+            res._id === reservationId ? { ...res, status: "confirmed" } : res
+          ),
+        }));
+
+        // Lấy lại dữ liệu mới sau khi cập nhật
+        fetchDashboardData();
+      } else {
+        message.error("Không thể xác nhận đặt bàn: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Error confirming reservation:", error);
+      message.error(
+        "Lỗi khi xác nhận đặt bàn: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
   };
 
-  const handleCancelReservation = (reservationId) => {
-    message.info("Chức năng này đang được phát triển");
+  const handleCancelReservation = async (reservationId) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.put(
+        `/reservation/status/${reservationId}`,
+        {
+          status: "cancelled",
+        },
+        config
+      );
+
+      if (response.data.status === "Success") {
+        message.success("Hủy đặt bàn thành công!");
+
+        // Cập nhật UI bằng cách cập nhật trạng thái reservation trong dashboardData
+        setDashboardData((prev) => ({
+          ...prev,
+          pendingReservations: prev.pendingReservations.filter(
+            (res) => res._id !== reservationId
+          ),
+          // Nếu đặt bàn đó có trong danh sách đặt bàn hôm nay, cập nhật trạng thái
+          todayReservations: prev.todayReservations.map((res) =>
+            res._id === reservationId ? { ...res, status: "cancelled" } : res
+          ),
+        }));
+
+        // Lấy lại dữ liệu mới sau khi cập nhật
+        fetchDashboardData();
+      } else {
+        message.error("Không thể hủy đặt bàn: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Error cancelling reservation:", error);
+      message.error(
+        "Lỗi khi hủy đặt bàn: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
   };
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <Spin size="large" tip="Đang tải dữ liệu..." />
+      <div
+        className="loading-container"
+        style={{ textAlign: "center", padding: "100px 0" }}
+      >
+        <Spin size="large" />
+        <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
       </div>
     );
   }
@@ -192,7 +298,6 @@ const StaffDashboard = () => {
           {!collapsed && (
             <div className="staff-info">
               <Text strong>{staff.name || "Staff"}</Text>
-              <Text type="secondary">{staff.email || "staff@example.com"}</Text>
             </div>
           )}
         </div>
@@ -404,16 +509,18 @@ const StaffDashboard = () => {
                   renderItem={(reservation) => (
                     <List.Item
                       key={reservation._id}
-                      actions={[
-                        <Button
-                          type="link"
-                          size="small"
-                          href={`/staff/reservation/${reservation._id}`}
-                          icon={<EyeOutlined />}
-                        >
-                          Chi tiết
-                        </Button>,
-                      ]}
+                      actions={
+                        [
+                          // <Button
+                          //   type="link"
+                          //   size="small"
+                          //   href={`/staff/reservation/${reservation._id}`}
+                          //   icon={<EyeOutlined />}
+                          // >
+                          //   Chi tiết
+                          // </Button>,
+                        ]
+                      }
                     >
                       <List.Item.Meta
                         avatar={<Avatar icon={<UserOutlined />} />}
@@ -432,11 +539,13 @@ const StaffDashboard = () => {
                             <Text>
                               {moment(reservation.reservationDate).format(
                                 "DD/MM/YYYY"
-                              )} - {reservation.reservationTime}
+                              )}{" "}
+                              - {reservation.reservationTime}
                             </Text>
                             <Text>
                               {reservation.numGuests || 2} khách - Bàn{" "}
-                              {reservation.table?.tableNumber || "Chưa xác định"}
+                              {reservation.table?.tableNumber ||
+                                "Chưa xác định"}
                             </Text>
                           </Space>
                         }
@@ -504,10 +613,11 @@ const StaffDashboard = () => {
                             <Text>
                               {moment(reservation.reservationDate).format(
                                 "DD/MM/YYYY"
-                              )} - {(reservation.reservationTime)}
+                              )}{" "}
+                              - {reservation.reservationTime}
                             </Text>
                             <Text>{reservation?.[0]?.numGuests} khách</Text>
-                            </Space>
+                          </Space>
                         }
                       />
                     </List.Item>
@@ -542,9 +652,7 @@ const StaffDashboard = () => {
                   <Col xs={24} sm={12} md={8} key={promotion._id}>
                     <Card className="promotion-card">
                       <div className="promotion-discount">
-                        {promotion.type === "percentage"
-                          ? `${promotion.value}%`
-                          : `${promotion.value.toLocaleString()}đ`}
+                        {promotion.discountPercent || 0} %
                       </div>
                       <div className="promotion-content">
                         <Title level={5}>{promotion.name}</Title>
@@ -553,7 +661,9 @@ const StaffDashboard = () => {
                         </Text>
                         <div className="promotion-date">
                           <CalendarOutlined /> Hết hạn:{" "}
-                          {moment(promotion.endDate).format("DD/MM/YYYY")}
+                          {promotion.endDate
+                            ? moment(promotion.endDate).format("DD/MM/YYYY")
+                            : "Không xác định"}
                         </div>
                       </div>
                     </Card>

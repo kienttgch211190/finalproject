@@ -7,7 +7,7 @@ const {
   updateRestaurant,
   deleteRestaurant,
 } = require("../controllers/restaurantController");
-const { authMiddleware, isStaff, isAdmin } = require("../middlewares/middleware");
+const { authMiddleware, isStaff, isAdmin , isStaffOrAdmin} = require("../middlewares/middleware");
 
 router.get("/", getAllRestaurants);
 router.get("/detail/:id", getRestaurantById);

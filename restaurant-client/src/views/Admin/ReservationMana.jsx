@@ -12,6 +12,8 @@ import {
   Tag,
   Space,
   message,
+  Tooltip,
+  Popconfirm,
 } from "antd";
 import { Link } from "react-router-dom";
 import moment from "moment";
@@ -22,6 +24,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 
 // Material-UI components for breadcrumbs
@@ -55,6 +58,7 @@ const ReservationMana = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [form] = Form.useForm();
+  const [tableLoading, setTableLoading] = useState(false);
 
   // Status configurations
   const statusConfig = {
@@ -83,13 +87,13 @@ const ReservationMana = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("accessToken");
-      
+
       const response = await axiosInstance.get("/reservation", {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.data.status === "Success") {
         setReservations(response.data.data || []);
       } else {
@@ -108,13 +112,11 @@ const ReservationMana = () => {
     try {
       const token = localStorage.getItem("accessToken");
 
-      const response = await axiosInstance.get("/restaurant",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await axiosInstance.get("/restaurant", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (response.data.status === "Success") {
         setRestaurants(response.data.data || []);
       }
@@ -128,30 +130,89 @@ const ReservationMana = () => {
     if (!restaurantId) return;
 
     try {
+      setTableLoading(true);
+      const token = localStorage.getItem("accessToken");
+
       const response = await axiosInstance.get(
-        `/table/restaurant/${restaurantId}`
+        `/table/restaurant/${restaurantId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      console.log("table",response.data);
+
       if (response.data.status === "Success") {
         setTables(response.data.data || []);
+      } else {
+        message.error("Không thể tải thông tin bàn");
+        setTables([]);
       }
     } catch (error) {
       console.error("Lỗi khi lấy danh sách bàn:", error);
+      setTables([]);
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  // Fetch available tables for a specific reservation
+  const fetchAvailableTables = async (
+    restaurantId,
+    reservationDate,
+    reservationTime,
+    numGuests,
+    excludeTableId = null
+  ) => {
+    if (!restaurantId || !reservationDate || !reservationTime || !numGuests)
+      return [];
+
+    try {
+      setTableLoading(true);
+      const token = localStorage.getItem("accessToken");
+
+      const response = await axiosInstance.post(
+        "/reservation/available-tables",
+        {
+          restaurantId,
+          reservationDate: moment(reservationDate).format("YYYY-MM-DD"),
+          reservationTime: moment(reservationTime).format("HH:mm"),
+          numGuests,
+          excludeTableId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.status === "Success") {
+        return response.data.data || [];
+      } else {
+        message.warning("Không tìm thấy bàn trống phù hợp");
+        return [];
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách bàn trống:", error);
+      return [];
+    } finally {
+      setTableLoading(false);
     }
   };
 
   // Fetch users
   const fetchUsers = async () => {
     try {
-      const response = await axiosInstance.get("/user/get-all-users", 
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      const response = await axiosInstance.get("/user/get-all-users", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
       if (response.data.status === "Success") {
-        const customers = (response.data.data || []).filter(user => user.role === "customer");
+        const customers = (response.data.data || []).filter(
+          (user) => user.role === "customer"
+        );
         setUsers(customers);
       }
     } catch (error) {
@@ -159,15 +220,21 @@ const ReservationMana = () => {
     }
   };
 
-  // Handle form submit
+  // Handle form submission
+  // Handle form submission
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+
+      // Format date and time properly
       const formattedValues = {
         ...values,
-        reservationDate: values.reservationDate.format("YYYY-MM-DD"),
-        reservationTime: values.reservationTime.format("HH:mm"),
+        reservationDate: moment(values.reservationDate).format("YYYY-MM-DD"),
+        reservationTime: moment(values.reservationTime).format("HH:mm"),
       };
+
+      // Hiển thị log để debug
+      console.log("Submitting reservation data:", formattedValues);
 
       if (selectedReservation) {
         // Edit mode
@@ -185,10 +252,26 @@ const ReservationMana = () => {
           fetchReservations();
           setIsModalOpen(false);
         } else {
-          message.error("Không thể cập nhật đặt bàn");
+          message.error("Không thể cập nhật đặt bàn: " + response.data.message);
         }
       } else {
-        // Create mode
+        // Create mode - Kiểm tra tất cả các trường bắt buộc
+        if (
+          !formattedValues.user ||
+          !formattedValues.restaurant ||
+          !formattedValues.table ||
+          !formattedValues.reservationDate ||
+          !formattedValues.reservationTime ||
+          !formattedValues.numGuests
+        ) {
+          message.error("Vui lòng điền đầy đủ thông tin đặt bàn");
+          setLoading(false);
+          return;
+        }
+
+        // Đảm bảo numGuests là số
+        formattedValues.numGuests = parseInt(formattedValues.numGuests);
+
         const response = await axiosInstance.post(
           "/reservation/create",
           formattedValues,
@@ -198,27 +281,35 @@ const ReservationMana = () => {
             },
           }
         );
+
         if (response.data.status === "Success") {
           message.success("Tạo đặt bàn thành công!");
           fetchReservations();
           setIsModalOpen(false);
         } else {
-          message.error("Không thể tạo đặt bàn");
+          message.error("Không thể tạo đặt bàn: " + response.data.message);
         }
       }
     } catch (error) {
-      message.error("Có lỗi xảy ra: " + error.message);
+      console.error("Error in form submission:", error);
+
+      // Hiển thị chi tiết lỗi từ server nếu có
+      if (error.response && error.response.data) {
+        console.log("Server error details:", error.response.data);
+        message.error("Lỗi: " + (error.response.data.message || error.message));
+      } else {
+        message.error("Có lỗi xảy ra: " + error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
-
   // Handle status change
   const handleStatusChange = async (id, newStatus) => {
     try {
       setLoading(true);
       const response = await axiosInstance.put(
-        `reservation/status/${id}`,
+        `/reservation/status/${id}`,
         {
           status: newStatus,
         },
@@ -237,89 +328,133 @@ const ReservationMana = () => {
           )
         );
       } else {
-        message.error("Không thể cập nhật trạng thái");
+        message.error(
+          "Không thể cập nhật trạng thái: " + response.data.message
+        );
       }
     } catch (error) {
+      console.error("Error updating status:", error);
       message.error("Có lỗi xảy ra khi cập nhật trạng thái");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle delete
-  // Handle delete
-const handleDelete = async (id) => {
-  // Add confirmation dialog
-  if (!window.confirm("Bạn có chắc chắn muốn xóa đặt bàn này? Dữ liệu đã xóa không thể khôi phục.")) {
-    return;
-  }
-  
-  try {
-    setLoading(true); // Set loading state while deleting
-    const token = localStorage.getItem("accessToken");
-    
-    const response = await axiosInstance.delete(`/reservation/delete/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+  // Handle delete reservation
+  const handleDelete = async (id) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
+
+      const response = await axiosInstance.delete(`/reservation/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.status === "Success") {
+        message.success("Xóa đặt bàn thành công");
+        // Update local state to remove the deleted reservation
+        setReservations((prevReservations) =>
+          prevReservations.filter((res) => res._id !== id)
+        );
+      } else {
+        message.error(
+          "Không thể xóa đặt bàn: " + (response.data.message || "Unknown error")
+        );
       }
-    });
-    
-    if (response.data.status === "Success") {
-      message.success("Xóa đặt bàn thành công");
-      // Update local state to remove the deleted reservation
-      setReservations(prevReservations => 
-        prevReservations.filter((res) => res._id !== id)
+    } catch (error) {
+      console.error("Error deleting reservation:", error);
+      message.error(
+        "Có lỗi xảy ra khi xóa đặt bàn: " +
+          (error.response?.data?.message || error.message)
       );
-    } else {
-      message.error("Không thể xóa đặt bàn: " + (response.data.message || "Unknown error"));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error deleting reservation:", error);
-    message.error("Có lỗi xảy ra khi xóa đặt bàn: " + (error.response?.data?.message || error.message));
-  } finally {
-    setLoading(false); // Reset loading state regardless of outcome
-  }
-};
-
-  // Open edit modal
-  const openEditModal = (reservation) => {
-    setSelectedReservation(reservation);
-
-    form.setFieldsValue({
-      user: reservation.user?._id,
-      restaurant: reservation.restaurant?._id,
-      table: reservation.table?._id,
-      numGuests: reservation.numGuests,
-      reservationDate: moment(reservation.reservationDate),
-      reservationTime: moment(reservation.reservationTime, "HH:mm"),
-      specialRequest: reservation.specialRequest || "",
-      status: reservation.status,
-    });
-
-    // Load tables for this restaurant
-    if (reservation.restaurant?._id) {
-      fetchTables(reservation.restaurant._id);
-    }
-
-    setIsModalOpen(true);
   };
 
-  // Open create modal
+  // Open edit modal with existing reservation data
+  const openEditModal = async (reservation) => {
+    setSelectedReservation(reservation);
+
+    try {
+      // Load tables for this restaurant first
+      if (reservation.restaurant?._id) {
+        await fetchTables(reservation.restaurant._id);
+      }
+
+      // Now set form values
+      form.setFieldsValue({
+        user: reservation.user?._id,
+        restaurant: reservation.restaurant?._id,
+        table: reservation.table?._id,
+        numGuests: reservation.numGuests,
+        reservationDate: moment(reservation.reservationDate),
+        reservationTime: moment(reservation.reservationTime, "HH:mm"),
+        specialRequest: reservation.specialRequest || "",
+        status: reservation.status,
+      });
+
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Error preparing edit modal:", error);
+      message.error("Không thể mở form chỉnh sửa");
+    }
+  };
+
+  // Open create modal with default values
   const openCreateModal = () => {
     setSelectedReservation(null);
 
+    // Reset form with default values
+    form.resetFields();
     form.setFieldsValue({
-      user: undefined,
-      restaurant: undefined,
-      table: undefined,
       numGuests: 1,
       reservationDate: moment(),
       reservationTime: moment("12:00", "HH:mm"),
-      specialRequest: "",
       status: "pending",
     });
 
     setIsModalOpen(true);
+  };
+
+  // Handle restaurant change in form
+  const handleRestaurantChange = async (value) => {
+    form.setFieldsValue({ table: undefined });
+    await fetchTables(value);
+  };
+
+  // Handle form field changes that require fetching available tables
+  const handleReservationParamChange = async () => {
+    const restaurantId = form.getFieldValue("restaurant");
+    const reservationDate = form.getFieldValue("reservationDate");
+    const reservationTime = form.getFieldValue("reservationTime");
+    const numGuests = form.getFieldValue("numGuests");
+
+    if (!restaurantId || !reservationDate || !reservationTime || !numGuests) {
+      return;
+    }
+
+    // If editing, we want to include the current table in available options
+    const excludeTableId = selectedReservation?.table?._id;
+
+    // Fetch available tables
+    const availableTables = await fetchAvailableTables(
+      restaurantId,
+      reservationDate,
+      reservationTime,
+      numGuests,
+      excludeTableId
+    );
+
+    if (availableTables.length > 0) {
+      setTables(availableTables);
+    } else {
+      message.warning(
+        "Không có bàn trống phù hợp vào thời điểm này. Các bàn hiện tại có thể đã được đặt."
+      );
+    }
   };
 
   // Table columns
@@ -329,15 +464,27 @@ const handleDelete = async (id) => {
       dataIndex: ["user", "name"],
       key: "userName",
       render: (text) => text || "N/A",
-      filteredValue: [searchTerm],
+      filteredValue: searchTerm ? [searchTerm] : null,
       onFilter: (value, record) => {
         const searchLower = value.toLowerCase();
         return (
           (record.user?.name || "").toLowerCase().includes(searchLower) ||
+          (record.user?.email || "").toLowerCase().includes(searchLower) ||
           (record.restaurant?.name || "").toLowerCase().includes(searchLower) ||
           (record.specialRequest || "").toLowerCase().includes(searchLower)
         );
       },
+    },
+    {
+      title: "Liên hệ",
+      dataIndex: ["user", "email"],
+      key: "userContact",
+      render: (email, record) => (
+        <div>
+          <div>{email || "N/A"}</div>
+          <small>{record.user?.phone || "N/A"}</small>
+        </div>
+      ),
     },
     {
       title: "Nhà hàng",
@@ -346,10 +493,19 @@ const handleDelete = async (id) => {
       render: (text) => text || "N/A",
     },
     {
+      title: "Bàn",
+      dataIndex: ["table", "name"],
+      key: "tableName",
+      render: (text, record) =>
+        text || `Bàn ${record.table?.tableNumber || "N/A"}`,
+    },
+    {
       title: "Ngày đặt",
       dataIndex: "reservationDate",
       key: "reservationDate",
       render: (date) => moment(date).format("DD/MM/YYYY"),
+      sorter: (a, b) =>
+        moment(a.reservationDate).unix() - moment(b.reservationDate).unix(),
     },
     {
       title: "Giờ",
@@ -387,6 +543,13 @@ const handleDelete = async (id) => {
           </Option>
         </Select>
       ),
+      filters: [
+        { text: "Đang chờ", value: "pending" },
+        { text: "Xác nhận", value: "confirmed" },
+        { text: "Hủy bỏ", value: "cancelled" },
+        { text: "Hoàn thành", value: "completed" },
+      ],
+      onFilter: (value, record) => record.status === value,
     },
     {
       title: "Thao tác",
@@ -401,15 +564,22 @@ const handleDelete = async (id) => {
           >
             Sửa
           </Button>
-          <Button
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record._id)}
-            type="primary"
-            danger
-            size="small"
+          <Popconfirm
+            title="Xóa đặt bàn"
+            description="Bạn có chắc chắn muốn xóa đơn đặt bàn này không?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Xóa"
+            cancelText="Hủy"
           >
-            Xóa
-          </Button>
+            <Button
+              icon={<DeleteOutlined />}
+              type="primary"
+              danger
+              size="small"
+            >
+              Xóa
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -474,7 +644,7 @@ const handleDelete = async (id) => {
         {/* Search */}
         <div style={{ marginBottom: 16 }}>
           <Input.Search
-            placeholder="Tìm kiếm theo tên khách hàng, nhà hàng..."
+            placeholder="Tìm kiếm theo tên khách hàng, email, nhà hàng..."
             allowClear
             onSearch={setSearchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -542,37 +712,13 @@ const handleDelete = async (id) => {
             >
               <Select
                 placeholder="Chọn nhà hàng"
-                onChange={(value) => {
-                  form.setFieldsValue({ table: undefined });
-                  fetchTables(value);
-                }}
+                onChange={handleRestaurantChange}
                 showSearch
                 optionFilterProp="children"
               >
                 {restaurants.map((restaurant) => (
                   <Option key={restaurant._id} value={restaurant._id}>
                     {restaurant.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="table"
-              label="Bàn"
-              rules={[{ required: true, message: "Vui lòng chọn bàn" }]}
-            >
-              <Select
-                placeholder="Chọn bàn"
-                disabled={
-                  !form.getFieldValue("restaurant") || tables.length === 0
-                }
-                showSearch
-                optionFilterProp="children"
-              >
-                {tables.map((table) => (
-                  <Option key={table._id} value={table._id}>
-                    {table.name} ({table.tableNumber})
                   </Option>
                 ))}
               </Select>
@@ -591,7 +737,11 @@ const handleDelete = async (id) => {
                 rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
                 style={{ width: "48%" }}
               >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  onChange={handleReservationParamChange}
+                />
               </Form.Item>
 
               <Form.Item
@@ -604,6 +754,7 @@ const handleDelete = async (id) => {
                   style={{ width: "100%" }}
                   format="HH:mm"
                   minuteStep={15}
+                  onChange={handleReservationParamChange}
                 />
               </Form.Item>
             </Space>
@@ -620,7 +771,48 @@ const handleDelete = async (id) => {
                 },
               ]}
             >
-              <InputNumber style={{ width: "100%" }} min={1} />
+              <InputNumber
+                style={{ width: "100%" }}
+                min={1}
+                onChange={handleReservationParamChange}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="table"
+              label={
+                <span>
+                  Bàn{" "}
+                  <Tooltip title="Chọn nhà hàng, ngày, giờ và số khách để xem bàn trống">
+                    <InfoCircleOutlined />
+                  </Tooltip>
+                </span>
+              }
+              rules={[{ required: true, message: "Vui lòng chọn bàn" }]}
+            >
+              <Select
+                placeholder={
+                  tableLoading ? "Đang tải bàn trống..." : "Chọn bàn"
+                }
+                disabled={
+                  !form.getFieldValue("restaurant") ||
+                  tableLoading ||
+                  tables.length === 0
+                }
+                showSearch
+                optionFilterProp="children"
+                loading={tableLoading}
+                notFoundContent={
+                  tableLoading ? "Đang tải..." : "Không có bàn trống"
+                }
+              >
+                {tables.map((table) => (
+                  <Option key={table._id} value={table._id}>
+                    {table.name || `Bàn ${table.tableNumber || ""}`} (Sức chứa:{" "}
+                    {table.capacity} người)
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
 
             <Form.Item

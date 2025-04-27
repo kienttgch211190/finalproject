@@ -1,0 +1,145 @@
+.reservation-layout {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+
+  .reservation-content {
+    margin: 0 auto;
+    max-width: 1000px;
+    padding: 24px;
+  }
+
+  .reservation-card {
+    border-radius: 8px;
+
+    .reservation-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+
+      h3 {
+        margin-left: 16px;
+        margin-bottom: 0;
+      }
+    }
+
+    .reservation-restaurant-info {
+      margin-bottom: 24px;
+      padding: 12px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+
+    .reservation-steps {
+      margin-bottom: 32px;
+    }
+
+    .step-content {
+      margin-bottom: 24px;
+      min-height: 300px;
+    }
+
+    .step-actions {
+      text-align: right;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 16px;
+    }
+  }
+}
+
+.table-selection {
+  .tables-grid {
+    margin-top: 16px;
+
+    .table-card {
+      border: 2px solid transparent;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: #1890ff;
+      }
+
+      &.selected {
+        border-color: #1890ff;
+        background-color: #e6f7ff;
+      }
+
+      .table-card-content {
+        display: flex;
+        position: relative;
+
+        .table-icon {
+          font-size: 24px;
+          margin-right: 12px;
+          color: #1890ff;
+        }
+
+        .table-info {
+          flex: 1;
+
+          h5 {
+            margin-bottom: 4px;
+          }
+
+          .ant-typography {
+            display: block;
+            margin-bottom: 2px;
+          }
+        }
+
+        .selected-icon {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          color: #52c41a;
+          font-size: 18px;
+        }
+      }
+    }
+  }
+}
+
+.customer-info {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.confirmation {
+  .confirmation-card {
+    margin-bottom: 24px;
+  }
+
+  .ant-descriptions {
+    margin-bottom: 16px;
+  }
+}
+
+.success-result {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+}
+
+.no-tables {
+  padding: 24px;
+  text-align: center;
+
+  .ant-alert {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .reservation-layout {
+    .reservation-steps {
+      .ant-steps-item-title {
+        font-size: 12px;
+      }
+    }
+  }
+}   

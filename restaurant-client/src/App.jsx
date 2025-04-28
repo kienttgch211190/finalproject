@@ -18,6 +18,7 @@ import PendingReservation from "./views/Staff/PendingReservation";
 import StaffPromotion from "./views/Staff/StaffPromotion";
 import RestaurantDetail from "./views/Customer/RestaurantDetail";
 import NewReservation from "./views/Customer/NewReservation";
+import Profile from "./views/User/Profile";
 
 // Tạo Protected Route component để kiểm tra đăng nhập
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +85,14 @@ function App() {
           element={
             <ProtectedRoute>
               <NewReservation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

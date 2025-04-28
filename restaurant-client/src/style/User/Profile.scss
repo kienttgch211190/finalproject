@@ -1,0 +1,45 @@
+.profile-header {
+  text-align: center;
+  margin-bottom: 24px;
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 16px;
+    font-size: 40px;
+  }
+}
+
+.tab-panel {
+  padding: 24px;
+}
+
+.reservation-table {
+  margin-top: 24px;
+}
+
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+  gap: 16px;
+}
+
+.MuiTab-root {
+  min-height: 64px;
+  
+  .MuiSvgIcon-root {
+    margin-right: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .MuiTab-root {
+    font-size: 0.8rem;
+    
+    .MuiSvgIcon-root {
+      margin-right: 4px;
+      font-size: 1rem;
+    }
+  }
+}

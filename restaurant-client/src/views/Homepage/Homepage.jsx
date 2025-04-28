@@ -33,6 +33,7 @@ import {
   ClearOutlined,
   FireOutlined,
   MenuOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import axios from "../../contexts/AxiosCustom";
 import moment from "moment";
@@ -120,6 +121,14 @@ const Homepage = () => {
       [name]: value,
     }));
   };
+    // Handle logout
+    const handleLogout = () => {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      navigate("/login");
+      message.success("Đăng xuất thành công!");
+    };
 
   const handleReservationParamChange = (name, value) => {
     setReservationParams((prev) => ({
@@ -235,6 +244,42 @@ const Homepage = () => {
 
   return (
     <Layout className="homepage-layout">
+      {/* Header với nút đăng xuất */}
+      <Header className="homepage-header">
+        <div className="header-content">
+          <div className="logo">
+            <Title level={3} style={{ color: "white", margin: 0 }}>
+              RestaurantBooking
+            </Title>
+          </div>
+          <div className="user-actions">
+            {user && user._id ? (
+              <Space>
+                <Button
+                  type="text"
+                  icon={<UserOutlined />}
+                  style={{ color: "white" }}
+                  onClick={() => navigate("/user/profile")}
+                >
+                  {user.name || "Tài khoản"}
+                </Button>
+                <Button type="primary" danger onClick={handleLogout}>
+                  Đăng xuất
+                </Button>
+              </Space>
+            ) : (
+              <Space>
+                <Button type="primary" ghost onClick={() => navigate("/login")}>
+                  Đăng nhập
+                </Button>
+                <Button type="primary" onClick={() => navigate("/register")}>
+                  Đăng ký
+                </Button>
+              </Space>
+            )}
+          </div>
+        </div>
+      </Header>
       {/* Hero Section */}
       <div className="hero-section">
         <div className="hero-content">
@@ -244,7 +289,6 @@ const Homepage = () => {
           <Paragraph className="hero-subtitle">
             Trải nghiệm ẩm thực tuyệt vời chỉ với vài cú nhấp chuột
           </Paragraph>
-
           <Card className="search-card">
             <Row gutter={[16, 16]} align="middle">
               <Col xs={24} md={8} lg={6}>

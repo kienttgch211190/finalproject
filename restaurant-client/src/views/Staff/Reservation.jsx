@@ -19,6 +19,7 @@ import {
   Typography,
   Divider,
 } from "antd";
+
 import { Link } from "react-router-dom";
 import moment from "moment";
 import {
@@ -60,7 +61,6 @@ const { Option } = Select;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
-const { confirm } = Modal;
 
 const ReservationMana = () => {
   // States
@@ -76,6 +76,17 @@ const ReservationMana = () => {
   const [tableFilter, setTableFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState(null);
   const [selectedDate, setSelectedDate] = useState(moment());
+
+  // Thêm state để quản lý modal xác nhận
+  const [confirmModal, setConfirmModal] = useState({
+    visible: false,
+    title: "",
+    content: "",
+    id: null,
+    action: null,
+    status: "",
+    icon: null,
+  });
 
   // Lấy thông tin staff từ localStorage
   const staff = JSON.parse(localStorage.getItem("user") || "{}");
@@ -233,6 +244,7 @@ const ReservationMana = () => {
   // Handle status change
   const handleStatusChange = async (id, newStatus) => {
     try {
+      console.log("Đang thay đổi trạng thái cho ID:", id, "thành", newStatus);
       setLoading(true);
 
       const response = await axiosInstance.put(
@@ -242,6 +254,8 @@ const ReservationMana = () => {
         },
         config
       );
+
+      console.log("Kết quả API:", response.data);
 
       if (response.data.status === "Success") {
         message.success(
@@ -273,46 +287,43 @@ const ReservationMana = () => {
     }
   };
 
-  // Xác nhận đơn đặt bàn
+  // Xác nhận đơn đặt bàn - Sử dụng state modal
   const confirmReservation = (id) => {
-    confirm({
+    console.log("confirmReservation được gọi với ID:", id);
+    setConfirmModal({
+      visible: true,
       title: "Xác nhận đơn đặt bàn",
-      icon: <CheckCircleOutlined style={{ color: "#1890ff" }} />,
       content: "Bạn có chắc chắn muốn xác nhận đơn đặt bàn này không?",
-      okText: "Xác nhận",
-      cancelText: "Hủy",
-      onOk() {
-        handleStatusChange(id, "confirmed");
-      },
+      id,
+      action: () => handleStatusChange(id, "confirmed"),
+      status: "confirmed",
+      icon: <CheckCircleOutlined style={{ color: "#1890ff" }} />,
     });
   };
 
-  // Hủy đơn đặt bàn
+  // Hủy đơn đặt bàn - Sử dụng state modal
   const cancelReservation = (id) => {
-    confirm({
+    setConfirmModal({
+      visible: true,
       title: "Hủy đơn đặt bàn",
-      icon: <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />,
       content: "Bạn có chắc chắn muốn hủy đơn đặt bàn này không?",
-      okText: "Hủy đơn",
-      okType: "danger",
-      cancelText: "Quay lại",
-      onOk() {
-        handleStatusChange(id, "cancelled");
-      },
+      id,
+      action: () => handleStatusChange(id, "cancelled"),
+      status: "cancelled",
+      icon: <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />,
     });
   };
 
-  // Hoàn thành đơn đặt bàn
+  // Hoàn thành đơn đặt bàn - Sử dụng state modal
   const completeReservation = (id) => {
-    confirm({
+    setConfirmModal({
+      visible: true,
       title: "Hoàn thành đơn đặt bàn",
-      icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
       content: "Xác nhận khách hàng đã đến và hoàn thành đơn đặt bàn?",
-      okText: "Hoàn thành",
-      cancelText: "Hủy",
-      onOk() {
-        handleStatusChange(id, "completed");
-      },
+      id,
+      action: () => handleStatusChange(id, "completed"),
+      status: "completed",
+      icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
     });
   };
 
@@ -540,7 +551,10 @@ const ReservationMana = () => {
           <Button
             key="view"
             icon={<EyeOutlined />}
-            onClick={() => viewReservationDetails(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              viewReservationDetails(record);
+            }}
             type="link"
           />
         );
@@ -552,7 +566,10 @@ const ReservationMana = () => {
               type="primary"
               size="small"
               icon={<CheckCircleOutlined />}
-              onClick={() => confirmReservation(record._id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                confirmReservation(record._id);
+              }}
             >
               Xác nhận
             </Button>
@@ -565,7 +582,10 @@ const ReservationMana = () => {
               danger
               size="small"
               icon={<CloseCircleOutlined />}
-              onClick={() => cancelReservation(record._id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                cancelReservation(record._id);
+              }}
             >
               Hủy
             </Button>
@@ -578,7 +598,10 @@ const ReservationMana = () => {
               key="complete"
               type="primary"
               size="small"
-              onClick={() => completeReservation(record._id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                completeReservation(record._id);
+              }}
               style={{ background: "#52c41a", borderColor: "#52c41a" }}
             >
               Hoàn thành
@@ -592,7 +615,10 @@ const ReservationMana = () => {
               danger
               size="small"
               icon={<CloseCircleOutlined />}
-              onClick={() => cancelReservation(record._id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                cancelReservation(record._id);
+              }}
             >
               Hủy
             </Button>
@@ -650,6 +676,22 @@ const ReservationMana = () => {
             >
               Làm mới
             </Button>
+            {/* <Button
+              onClick={() => {
+                // Hàm test dialog
+                setConfirmModal({
+                  visible: true,
+                  title: "Test Dialog",
+                  content: "This is a test dialog",
+                  id: null,
+                  action: () => console.log("Test action"),
+                  status: "confirmed",
+                  icon: <CheckCircleOutlined style={{ color: "#1890ff" }} />,
+                });
+              }}
+            >
+              Test Dialog
+            </Button> */}
           </Box>
         </Box>
 
@@ -809,7 +851,7 @@ const ReservationMana = () => {
         {/* Reservation Detail Modal */}
         <Modal
           title="Chi tiết đặt bàn"
-          visible={isModalVisible}
+          open={isModalVisible} // Thay visible thành open nếu dùng antd v5
           onCancel={() => setIsModalVisible(false)}
           footer={[
             <Button key="close" onClick={() => setIsModalVisible(false)}>
@@ -922,8 +964,8 @@ const ReservationMana = () => {
                         type="primary"
                         icon={<CheckCircleOutlined />}
                         onClick={() => {
-                          confirmReservation(selectedReservation._id);
                           setIsModalVisible(false);
+                          confirmReservation(selectedReservation._id);
                         }}
                       >
                         Xác nhận đặt bàn
@@ -933,15 +975,14 @@ const ReservationMana = () => {
                         danger
                         icon={<CloseCircleOutlined />}
                         onClick={() => {
-                          cancelReservation(selectedReservation._id);
                           setIsModalVisible(false);
+                          cancelReservation(selectedReservation._id);
                         }}
                       >
                         Hủy đặt bàn
                       </Button>
                     </>
                   )}
-
                   {selectedReservation.status === "confirmed" && (
                     <>
                       <Button
@@ -951,8 +992,8 @@ const ReservationMana = () => {
                           borderColor: "#52c41a",
                         }}
                         onClick={() => {
-                          completeReservation(selectedReservation._id);
                           setIsModalVisible(false);
+                          completeReservation(selectedReservation._id);
                         }}
                       >
                         Hoàn thành đặt bàn
@@ -962,8 +1003,8 @@ const ReservationMana = () => {
                         danger
                         icon={<CloseCircleOutlined />}
                         onClick={() => {
-                          cancelReservation(selectedReservation._id);
                           setIsModalVisible(false);
+                          cancelReservation(selectedReservation._id);
                         }}
                       >
                         Hủy đặt bàn
@@ -974,6 +1015,37 @@ const ReservationMana = () => {
               </div>
             </div>
           )}
+        </Modal>
+
+        {/* Modal xác nhận mới sử dụng state */}
+        <Modal
+          title={confirmModal.title}
+          open={confirmModal.visible}
+          onOk={() => {
+            confirmModal.action && confirmModal.action();
+            setConfirmModal({ ...confirmModal, visible: false });
+          }}
+          onCancel={() => setConfirmModal({ ...confirmModal, visible: false })}
+          okText={
+            confirmModal.status === "confirmed"
+              ? "Xác nhận"
+              : confirmModal.status === "cancelled"
+              ? "Hủy đơn"
+              : "Hoàn thành"
+          }
+          cancelText="Quay lại"
+          okButtonProps={{
+            style:
+              confirmModal.status === "completed"
+                ? { background: "#52c41a", borderColor: "#52c41a" }
+                : confirmModal.status === "cancelled"
+                ? { background: "#ff4d4f", borderColor: "#ff4d4f" }
+                : {},
+          }}
+        >
+          <p>
+            {confirmModal.icon && confirmModal.icon} {confirmModal.content}
+          </p>
         </Modal>
       </Paper>
     </Container>

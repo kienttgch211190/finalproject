@@ -79,6 +79,7 @@ const RestaurantDetail = () => {
       try {
         setLoading(true);
         const response = await axiosInstance.get(`/restaurant/detail/${id}`);
+        console.log("Restaurant response:", response.data);
 
         if (response.data.status === "Success") {
           setRestaurant(response.data.data);
@@ -315,7 +316,7 @@ const RestaurantDetail = () => {
 
   return (
     <Layout className="restaurant-detail-layout">
-      <Content className="restaurant-detail-content">
+      <Content className="restaurant-detail-content restaurant-content-wider">
         {/* Header Section */}
         <div className="restaurant-header">
           <Button
@@ -325,19 +326,6 @@ const RestaurantDetail = () => {
           >
             Quay lại
           </Button>
-          <div className="restaurant-cover">
-            <Image
-              src={
-                restaurant.imageUrl ||
-                `https://source.unsplash.com/random/?restaurant,${
-                  restaurant.cuisineType || "food"
-                }`
-              }
-              alt={restaurant.name}
-              fallback="data:image/png;base64,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"
-            />
-          </div>
-
           <Card className="restaurant-info-card">
             <Title level={2}>{restaurant.name}</Title>
             <Space size={[0, 8]} wrap>
@@ -362,95 +350,90 @@ const RestaurantDetail = () => {
 
             <Divider />
 
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={16}>
-                <div className="restaurant-details">
-                  <Paragraph>
-                    <EnvironmentOutlined /> {restaurant.address}
-                  </Paragraph>
-                  <Paragraph>
-                    <PhoneOutlined />{" "}
-                    {restaurant.phone || "Chưa cập nhật số điện thoại"}
-                  </Paragraph>
-                  <Paragraph>
-                    <ClockCircleOutlined /> Giờ mở cửa:{" "}
-                    {restaurant.openingTime || "08:00"} -{" "}
-                    {restaurant.closingTime || "22:00"}
-                  </Paragraph>
+            {/* Thay đổi cấu trúc layout từ Row và Col sang cấu trúc liên tiếp */}
+            <div className="restaurant-details-container">
+              <div className="restaurant-details">
+                <Paragraph>
+                  <EnvironmentOutlined /> {restaurant.address}
+                </Paragraph>
+                <Paragraph>
+                  <ClockCircleOutlined /> Giờ mở cửa: {restaurant.openingTime} -{" "}
+                  {restaurant.closingTime}
+                </Paragraph>
 
-                  {restaurant.description && (
-                    <div className="restaurant-description">
-                      <Title level={5}>Giới thiệu</Title>
-                      <Paragraph>{restaurant.description}</Paragraph>
-                    </div>
-                  )}
-                </div>
-              </Col>
+                {restaurant.description && (
+                  <div className="restaurant-description">
+                    <Title level={5}>Giới thiệu</Title>
+                    <Paragraph>{restaurant.description}</Paragraph>
+                  </div>
+                )}
+              </div>
+            </div>
 
-              <Col xs={24} md={8}>
-                <Card className="reservation-card" title="Đặt bàn">
-                  <Form
-                    layout="vertical"
-                    form={form}
-                    initialValues={reservationParams}
-                  >
-                    <Form.Item label="Ngày đặt bàn" required>
-                      <DatePicker
-                        style={{ width: "100%" }}
-                        format="DD/MM/YYYY"
-                        value={reservationParams.date}
-                        onChange={(date) =>
-                          handleReservationParamChange("date", date)
-                        }
-                        disabledDate={(current) => {
-                          // Không cho phép chọn ngày trong quá khứ
-                          return current && current < moment().startOf("day");
-                        }}
-                      />
-                    </Form.Item>
+            {/* Thêm phần đặt bàn bên dưới */}
+            <Divider />
 
-                    <Form.Item label="Giờ đặt bàn" required>
-                      <TimePicker
-                        style={{ width: "100%" }}
-                        format="HH:mm"
-                        minuteStep={15}
-                        value={reservationParams.time}
-                        onChange={(time) =>
-                          handleReservationParamChange("time", time)
-                        }
-                      />
-                    </Form.Item>
+            <Card className="reservation-card" title="Đặt bàn">
+              <Form
+                layout="vertical"
+                form={form}
+                initialValues={reservationParams}
+              >
+                <Form.Item label="Ngày đặt bàn" required>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    format="DD/MM/YYYY"
+                    value={reservationParams.date}
+                    onChange={(date) =>
+                      handleReservationParamChange("date", date)
+                    }
+                    disabledDate={(current) => {
+                      // Không cho phép chọn ngày trong quá khứ
+                      return current && current < moment().startOf("day");
+                    }}
+                  />
+                </Form.Item>
 
-                    <Form.Item label="Số khách" required>
-                      <InputNumber
-                        style={{ width: "100%" }}
-                        min={1}
-                        max={20}
-                        value={reservationParams.guests}
-                        onChange={(value) =>
-                          handleReservationParamChange("guests", value)
-                        }
-                        addonAfter={<UserOutlined />}
-                      />
-                    </Form.Item>
+                <Form.Item label="Giờ đặt bàn" required>
+                  <TimePicker
+                    style={{ width: "100%" }}
+                    format="HH:mm"
+                    minuteStep={15}
+                    value={reservationParams.time}
+                    onChange={(time) =>
+                      handleReservationParamChange("time", time)
+                    }
+                  />
+                </Form.Item>
 
-                    {/* Hiển thị danh sách bàn có sẵn */}
-                    {renderAvailableTables()}
+                <Form.Item label="Số khách" required>
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    min={1}
+                    max={20}
+                    value={reservationParams.guests}
+                    onChange={(value) =>
+                      handleReservationParamChange("guests", value)
+                    }
+                    addonAfter={<UserOutlined />}
+                  />
+                </Form.Item>
 
-                    <Button
-                      type="primary"
-                      size="large"
-                      block
-                      onClick={handleStartReservation}
-                      className="reservation-button"
-                      disabled={!selectedTable}
-                    >
-                      {selectedTable ? "Đặt bàn đã chọn" : "Đặt bàn ngay"}
-                    </Button>
-                  </Form>
-                </Card>
-              </Col>
-            </Row>
+                {/* Hiển thị danh sách bàn có sẵn */}
+                {renderAvailableTables()}
+
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  onClick={handleStartReservation}
+                  className="reservation-button"
+                  disabled={!selectedTable}
+                >
+                  {selectedTable ? "Đặt bàn đã chọn" : "Đặt bàn ngay"}
+                </Button>
+              </Form>
+            </Card>
           </Card>
         </div>
 

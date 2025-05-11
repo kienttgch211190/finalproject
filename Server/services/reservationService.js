@@ -519,8 +519,31 @@ const getRestaurantCancelledReservations = async (restaurantId, query = {}) => {
   }
 };
 
+const getUserReservations = async (userId) => {
+  try {
+    if (!userId) {
+      return { status: "Error", message: "User ID is required" };
+    }
+
+    // Find all reservations for the specified user
+    const reservations = await Reservation.find({ user: userId })
+      .populate("restaurant", "name address phone cuisineType")
+      .populate("table", "name tableNumber capacity")
+      .sort({ reservationDate: -1, reservationTime: -1 }); // Sort by date and time (newest first)
+
+    return {
+      status: "Success",
+      message: "User reservations retrieved successfully",
+      data: reservations,
+    };
+  } catch (error) {
+    return { status: "Error", message: error.message };
+  }
+};
+
 // Thêm function vào module.exports
 module.exports = {
+  getUserReservations,
   getAvailableTables,
   createReservation,
   updateReservation,

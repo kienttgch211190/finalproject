@@ -143,8 +143,6 @@ const NewReservation = () => {
     fetchData();
   }, [restaurantId, date, time, guests, navigate, form, tableId, token]);
 
-  // Hàm fetch available tables riêng để tái sử dụng
-  // Sửa hàm fetchAvailableTables
   const fetchAvailableTables = async () => {
     try {
       // Fetch available tables for the selected time and guest count
@@ -553,14 +551,6 @@ const NewReservation = () => {
             )}
           </Descriptions>
         </Card>
-
-        <Alert
-          message="Lưu ý"
-          description="Đơn đặt bàn của bạn sẽ được nhà hàng xác nhận sau khi đặt. Vui lòng kiểm tra email hoặc điện thoại để nhận thông tin cập nhật."
-          type="info"
-          showIcon
-          style={{ marginTop: 16 }}
-        />
       </div>
     );
   };

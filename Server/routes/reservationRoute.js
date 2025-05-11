@@ -15,6 +15,7 @@ const {
   getRestaurantCompletedReservations,
   getRestaurantConfirmedReservations,
   getRestaurantCancelledReservations,
+  getUserReservations,
 } = require("../controllers/reservationController");
 const {
   authMiddleware,
@@ -44,7 +45,7 @@ router.delete(
   authMiddleware("access"),
   isAdmin,
   cancelReservation
-); //sau thay ham delete
+);
 // Get all reservations for a user
 router.get(
   "/restaurant/:restaurantId",
@@ -87,4 +88,5 @@ router.get(
   getRestaurantCancelledReservations
 );
 
+router.get("/user/:userId", authMiddleware("access"), getUserReservations);
 module.exports = router;

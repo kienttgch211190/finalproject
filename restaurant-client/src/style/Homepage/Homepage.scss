@@ -304,3 +304,142 @@
   padding: 0 8px;
   margin-right: 0;
 }
+/* Điều chỉnh style cho reservation-card */
+.restaurant-info-card {
+  margin-bottom: 24px;
+  
+  .restaurant-details-container {
+    margin-bottom: 20px;
+  }
+  
+  .reservation-card {
+    width: 100%;
+    margin-top: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+    
+    .ant-card-head {
+      background-color: #f7f7f7;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+    
+    .ant-form-item {
+      margin-bottom: 16px;
+    }
+  }
+  
+  .available-tables {
+    margin: 16px 0;
+    
+    .table-item {
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 4px;
+      transition: all 0.3s;
+      
+      &:hover {
+        background-color: #f5f5f5;
+      }
+      
+      &.selected {
+        background-color: #e6f7ff;
+      }
+    }
+  }
+  
+  .reservation-button {
+    margin-top: 16px;
+  }
+}
+/* Điều chỉnh layout chính */
+.restaurant-detail-layout {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* Mở rộng container chính */
+.restaurant-content-wider {
+  max-width: 1280px !important; /* Tăng độ rộng tối đa */
+  width: 95% !important; /* Chiếm 95% chiều rộng màn hình */
+  margin: 0 auto !important; /* Canh giữa */
+  padding: 30px !important; /* Thêm padding lớn hơn */
+}
+
+/* Điều chỉnh card chính */
+.restaurant-info-card {
+  width: 100% !important;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
+  .ant-card-body {
+    padding: 24px;
+  }
+}
+
+/* Tăng kích thước cho reservation-card */
+.reservation-card {
+  width: 100% !important;
+  margin: 16px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  .ant-card-head {
+    padding: 0 24px;
+    background-color: #f7f7f7;
+  }
+  
+  .ant-card-body {
+    padding: 24px;
+  }
+}
+
+/* Điều chỉnh tabs */
+.restaurant-tabs {
+  width: 100% !important;
+  margin-top: 24px;
+  
+  .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    padding: 12px 20px;
+  }
+  
+  .ant-tabs-content {
+    background: white;
+    padding: 24px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Điều chỉnh menu-item-card */
+.menu-item-card {
+  height: 100%;
+  transition: all 0.3s;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  }
+  
+  .menu-item-price {
+    color: #f5222d;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+}
+
+/* Điều chỉnh responsive */
+@media (max-width: 768px) {
+  .restaurant-content-wider {
+    width: 100% !important;
+    padding: 16px !important;
+  }
+  
+  .restaurant-info-card,
+  .reservation-card {
+    .ant-card-body {
+      padding: 16px;
+    }
+  }
+}

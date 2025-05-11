@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -27,6 +28,7 @@ import {
   AccountCircle,
 } from "@mui/icons-material";
 import { Table, Tag, Space, Spin, Empty } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import moment from "moment";
 import { Link } from "react-router-dom";
 import axiosInstance from "../../contexts/AxiosCustom";
@@ -53,6 +55,7 @@ function TabPanel(props) {
 const Profile = () => {
   const [value, setValue] = useState(0);
   const [user, setUser] = useState(null);
+    const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
@@ -119,6 +122,8 @@ const Profile = () => {
           },
         }
       );
+
+      console.log("Reservations response:", response.data);
 
       if (response.data.status === "Success") {
         setReservations(response.data.data || []);
@@ -237,14 +242,18 @@ const Profile = () => {
     },
     {
       title: "Số khách",
-      dataIndex: "numGuests",
+      dataIndex: ["table", "capacity"], // Cập nhật đường dẫn đến capacity
       key: "guests",
+      render: (text) => text || "Không xác định",
     },
     {
       title: "Bàn",
-      dataIndex: ["table", "name"],
+      dataIndex: ["table", "tableNumber"], // Cập nhật đường dẫn đến tableNumber
       key: "table",
-      render: (text, record) => text || "Chưa xác định",
+      render: (text, record) => {
+        if (text) return `Bàn ${text}`;
+        return record.table?.name || "Chưa xác định";
+      },
     },
     {
       title: "Trạng thái",
@@ -258,6 +267,14 @@ const Profile = () => {
         { text: "Đã hủy", value: "cancelled" },
       ],
       onFilter: (value, record) => record.status === value,
+    },
+    // Thêm cột cho yêu cầu đặc biệt nếu có
+    {
+      title: "Ghi chú",
+      dataIndex: "specialRequest",
+      key: "specialRequest",
+      render: (text) => text || "Không có",
+      ellipsis: true,
     },
   ];
 
@@ -304,6 +321,13 @@ const Profile = () => {
 
         {/* Personal Info Tab */}
         <TabPanel value={value} index={0}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/home")}
+            className="back-button"
+          >
+            Quay lại
+          </Button>
           <Box
             sx={{
               display: "flex",

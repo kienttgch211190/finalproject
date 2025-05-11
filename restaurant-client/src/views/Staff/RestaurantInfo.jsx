@@ -379,13 +379,6 @@ const RestaurantInfo = () => {
             Thông tin nhà hàng
           </MuiTypography>
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              type="default"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => (window.location.href = "/staff/dashboard")}
-            >
-              Quay lại Dashboard
-            </Button>
           </Box>
         </Box>
 
@@ -701,7 +694,7 @@ const RestaurantInfo = () => {
                 rules={[
                   { required: true, message: "Vui lòng chọn loại ẩm thực" },
                 ]}
-                style={{ width: "48%" }}
+                style={{ width: "100%" }}
               >
                 <Select placeholder="Chọn loại ẩm thực">
                   {cuisineTypes.map((type) => (
@@ -716,7 +709,7 @@ const RestaurantInfo = () => {
                 name="priceRange"
                 label="Mức giá"
                 rules={[{ required: true, message: "Vui lòng chọn mức giá" }]}
-                style={{ width: "48%" }}
+                style={{ width: "100%" }}
               >
                 <Select placeholder="Chọn mức giá">
                   {priceRangeOptions.map((option) => (
@@ -741,7 +734,7 @@ const RestaurantInfo = () => {
                 rules={[
                   { required: true, message: "Vui lòng chọn giờ mở cửa" },
                 ]}
-                style={{ width: "48%" }}
+                style={{ width: "100%" }}
               >
                 <TimePicker format="HH:mm" style={{ width: "100%" }} />
               </Form.Item>
@@ -752,7 +745,7 @@ const RestaurantInfo = () => {
                 rules={[
                   { required: true, message: "Vui lòng chọn giờ đóng cửa" },
                 ]}
-                style={{ width: "48%" }}
+                style={{ width: "100%" }}
               >
                 <TimePicker format="HH:mm" style={{ width: "100%" }} />
               </Form.Item>

@@ -299,6 +299,28 @@ const getRestaurantCancelledReservations = async (req, res) => {
   }
 };
 
+const getUserReservations = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const result = await reservationService.getUserReservations(userId);
+
+    if (result.status === "Success") {
+      res.status(200).json(result);
+    } else {
+      res
+        .status(
+          result.status === "Error" && result.message.includes("not found")
+            ? 404
+            : 400
+        )
+        .json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ status: "Error", message: err.message });
+  }
+};
+
 module.exports = {
   getAvailableTables,
   createReservation,
@@ -314,4 +336,5 @@ module.exports = {
   getRestaurantCompletedReservations,
   getRestaurantConfirmedReservations,
   getRestaurantCancelledReservations,
+  getUserReservations,
 };

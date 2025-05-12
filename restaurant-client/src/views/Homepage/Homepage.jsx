@@ -121,14 +121,14 @@ const Homepage = () => {
       [name]: value,
     }));
   };
-    // Handle logout
-    const handleLogout = () => {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-      navigate("/login");
-      message.success("Đăng xuất thành công!");
-    };
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    navigate("/login");
+    message.success("Đăng xuất thành công!");
+  };
 
   const handleReservationParamChange = (name, value) => {
     setReservationParams((prev) => ({
@@ -211,7 +211,7 @@ const Homepage = () => {
 
   // Cuisine type options
   const cuisineTypeOptions = [
-    { value: "vietnamese", label: "Việt Nam" },
+    { value: "Việt Nam", label: "Việt Nam" },
     { value: "italian", label: "Ý" },
     { value: "japanese", label: "Nhật Bản" },
     { value: "korean", label: "Hàn Quốc" },
@@ -401,9 +401,7 @@ const Homepage = () => {
                         <div className="promotion-cover">
                           <img
                             alt={promotion.name}
-                            src={`https://source.unsplash.com/random/?restaurant,${
-                              promotion.restaurant?.cuisineType || "food"
-                            }`}
+                            src="https://t3.ftcdn.net/jpg/03/24/73/92/360_F_324739203_keeq8udvv0P2h1MLYJ0GLSlTBagoXS48.jpg"
                           />
                         </div>
                       }
@@ -505,12 +503,7 @@ const Homepage = () => {
                       <div className="restaurant-image">
                         <img
                           alt={restaurant.name}
-                          src={
-                            restaurant.imageUrl ||
-                            `https://source.unsplash.com/random/?restaurant,${
-                              restaurant.cuisineType || "food"
-                            }`
-                          }
+                          src="https://t3.ftcdn.net/jpg/03/24/73/92/360_F_324739203_keeq8udvv0P2h1MLYJ0GLSlTBagoXS48.jpg"
                         />
                       </div>
                     }
@@ -530,41 +523,50 @@ const Homepage = () => {
                     <Meta
                       title={restaurant.name}
                       description={
-                        <Space
-                          direction="vertical"
-                          size={1}
-                          style={{ width: "100%" }}
-                        >
-                          <Space align="center">
+                        <div className="restaurant-info">
+                          {/* Rating */}
+                          <div className="restaurant-rating">
                             <Rate
                               disabled
                               defaultValue={4.5}
                               style={{ fontSize: "14px" }}
                             />
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <Text
+                              type="secondary"
+                              style={{ fontSize: "12px", marginLeft: "8px" }}
+                            >
                               4.5 (120)
                             </Text>
-                          </Space>
-                          <Text type="secondary">
+                          </div>
+
+                          {/* Cuisine Type */}
+                          <div className="restaurant-cuisine">
                             <MenuOutlined />{" "}
-                            {restaurant.cuisineType || "Đa dạng"}
-                          </Text>
-                          <Text
-                            type="secondary"
-                            ellipsis
-                            style={{ width: "100%" }}
-                          >
-                            <EnvironmentOutlined /> {restaurant.address}
-                          </Text>
-                          <div className="restaurant-details">
-                            {renderPriceRangeTag(restaurant.priceRange)}
                             <Text type="secondary">
+                              {restaurant.cuisineType || "Đa dạng"}
+                            </Text>
+                          </div>
+
+                          {/* Address */}
+                          <div className="restaurant-address">
+                            <EnvironmentOutlined />
+                            <Text type="secondary" ellipsis>
+                              {restaurant.address}
+                            </Text>
+                          </div>
+
+                          {/* Price and Time */}
+                          <div className="restaurant-footer">
+                            <span className="price-tag">
+                              {renderPriceRangeTag(restaurant.priceRange)}
+                            </span>
+                            <span className="time-info">
                               <ClockCircleOutlined />{" "}
                               {restaurant.openingTime || "08:00"} -{" "}
                               {restaurant.closingTime || "22:00"}
-                            </Text>
+                            </span>
                           </div>
-                        </Space>
+                        </div>
                       }
                     />
                   </Card>

@@ -443,3 +443,87 @@
     }
   }
 }
+
+.restaurant-card {
+  height: 100%;
+  
+  .ant-card-cover {
+    height: 200px;
+    overflow: hidden;
+    
+    .restaurant-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  .ant-card-meta-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 8px !important;
+  }
+  
+  .restaurant-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .restaurant-rating {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  
+  .restaurant-cuisine, .restaurant-address {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .restaurant-address {
+    span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+  }
+  
+  .restaurant-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  
+  .price-tag {
+    flex-shrink: 0;
+  }
+  
+  .time-info {
+    white-space: nowrap;
+    font-size: 12px;
+  }
+  
+  .ant-card-actions {
+    border-top: none;
+    background: transparent;
+    margin-top: -12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .restaurant-card {
+    .restaurant-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  }
+}
